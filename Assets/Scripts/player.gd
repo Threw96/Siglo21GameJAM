@@ -3,6 +3,9 @@ extends CharacterBody2D
 #Variable de velocidad a la que se mueve el personaje
 @export var speed: float = 10  
 
+
+func _ready() -> void:
+	Global.Player = self
 ###Funcion de godot en la que se ejecutan las fisicas 
 # - En este caso las direcciones estan mapeadas desde el proyecto:
 # W = arriba , A= izquierda, D= derecha y S= abajo

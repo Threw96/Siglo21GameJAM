@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://djg85hjivk031" path="res://Assets/Scripts/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://cqacq1kjny1h1" path="res://Assets/Images/one_handed.png" id="1_rpqav"]
+[ext_resource type="Texture2D" uid="uid://snwfuhtryh00" path="res://Assets/Images/double_barrel_shotgun_icon.png" id="3_gntrk"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4i404"]
 size = Vector2(33, 43)
@@ -17,3 +18,16 @@ texture = ExtResource("1_rpqav")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1724357133]
 position = Vector2(-0.5, 0.5)
 shape = SubResource("RectangleShape2D_4i404")
+
+[node name="Weapon" type="Node2D" parent="." unique_id=1680010114]
+position = Vector2(-1, 18)
+rotation = -0.37350047
+
+[node name="DoubleBarrelShotgunIcon" type="Sprite2D" parent="Weapon" unique_id=1752828791]
+position = Vector2(29.592485, 9.44907)
+rotation = 0.37350044
+scale = Vector2(0.15000002, 0.15000002)
+texture = ExtResource("3_gntrk")
+
+[node name="Marker2D" type="Marker2D" parent="Weapon/DoubleBarrelShotgunIcon" unique_id=577706523]
+position = Vector2(73.33331, 53.333336)

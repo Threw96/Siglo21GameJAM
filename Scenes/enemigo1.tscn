@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://ckgoi32vehqv0"]
+
+[ext_resource type="Script" uid="uid://csd34b1l3qatb" path="res://enemigo1.gd" id="1_c0ehi"]
+[ext_resource type="Texture2D" uid="uid://e12e3pvc0l8d" path="res://Assets/Images/enemies/baby_alien.png" id="2_7rc34"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_q172i"]
+size = Vector2(24, 31)
+
+[node name="CharacterBody2D" type="CharacterBody2D" unique_id=1511046092]
+scale = Vector2(1.295, 1.295)
+script = ExtResource("1_c0ehi")
+speed = 150.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=464342022]
+position = Vector2(-2, -2.5)
+shape = SubResource("RectangleShape2D_q172i")
+
+[node name="BabyAlien" type="Sprite2D" parent="." unique_id=1097438725]
+position = Vector2(-2, -4)
+scale = Vector2(0.05, 0.05)
+texture = ExtResource("2_7rc34")

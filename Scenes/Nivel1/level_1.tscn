@@ -1,9 +1,17 @@
-[gd_scene format=3 uid="uid://c1uqfvanhbqnm"]
+[gd_scene format=3 uid="uid://e3hookq6tykq"]
 
-[ext_resource type="PackedScene" uid="uid://cldfjf45h8j5o" path="res://Scenes/Player.tscn" id="1_fuxb2"]
+[ext_resource type="PackedScene" uid="uid://bppsc7c8a1n31" path="res://Scenes/Player.tscn" id="1_fuxb2"]
+[ext_resource type="PackedScene" uid="uid://ckgoi32vehqv0" path="res://Scenes/enemigo1.tscn" id="2_4mosc"]
 
-[node name="Level1" type="Node2D" unique_id=899494881]
+[node name="level1" type="Node2D" unique_id=892134322]
 
-[node name="CharacterBody2D" parent="." unique_id=259061177 instance=ExtResource("1_fuxb2")]
+[node name="CharacterBody2D" parent="." unique_id=1853936701 instance=ExtResource("1_fuxb2")]
+position = Vector2(770, 249)
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=892117590]
+[node name="CharacterBody2D2" parent="." unique_id=1511046092 instance=ExtResource("2_4mosc")]
+position = Vector2(156, 446)
+speed = 150.0
+
+[node name="CharacterBody2D3" parent="." unique_id=1373772661 instance=ExtResource("2_4mosc")]
+position = Vector2(159, 62)
+speed = 120.0

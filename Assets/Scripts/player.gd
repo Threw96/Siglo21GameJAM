@@ -1,7 +1,8 @@
 extends CharacterBody2D
 
-#Variable de velocidad a la que se mueve el personaje
+
 @export var speed: float = 10  
+
 
 #texto de prueba para control de version
 func _ready() -> void:
@@ -12,6 +13,7 @@ func _ready() -> void:
 # Luego multiplica la direccion por speed y nos da la velocidad hacia donde mover
 ###
 func _physics_process(delta: float) -> void:
+	
 	var Direction := Input.get_vector("izquierda","derecha","arriba","abajo")
 	
 	velocity = Direction * speed

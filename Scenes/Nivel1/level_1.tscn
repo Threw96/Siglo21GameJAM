@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bppsc7c8a1n31" path="res://Scenes/Player.tscn" id="1_fuxb2"]
 [ext_resource type="PackedScene" uid="uid://ckgoi32vehqv0" path="res://Scenes/enemigo1.tscn" id="2_4mosc"]
+[ext_resource type="Script" uid="uid://b6li1kogw11yc" path="res://Assets/Scripts/spawn.gd" id="3_t1snq"]
 
 [node name="level1" type="Node2D" unique_id=892134322]
 
@@ -9,9 +10,24 @@
 position = Vector2(770, 249)
 
 [node name="CharacterBody2D2" parent="." unique_id=1511046092 instance=ExtResource("2_4mosc")]
-position = Vector2(156, 446)
+position = Vector2(156, 307.00003)
 speed = 150.0
 
-[node name="CharacterBody2D3" parent="." unique_id=1373772661 instance=ExtResource("2_4mosc")]
-position = Vector2(159, 62)
-speed = 120.0
+[node name="spawn" type="Node2D" parent="." unique_id=1039921552]
+script = ExtResource("3_t1snq")
+
+[node name="x1" type="Marker2D" parent="spawn" unique_id=2084239494]
+
+[node name="x2" type="Marker2D" parent="spawn" unique_id=59870991]
+position = Vector2(1083, 0)
+
+[node name="y1" type="Marker2D" parent="spawn" unique_id=1121478867]
+
+[node name="y2" type="Marker2D" parent="spawn" unique_id=846174626]
+position = Vector2(-1, 641)
+
+[node name="Timer" type="Timer" parent="." unique_id=2144085336]
+wait_time = 4.0
+autostart = true
+
+[connection signal="timeout" from="Timer" to="spawn" method="_on_timer_timeout"]

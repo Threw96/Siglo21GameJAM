@@ -7,7 +7,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ehdng"]
 size = Vector2(105, 94)
 
-[node name="Gema" type="Node2D" unique_id=1003824480]
+[node name="Gema" type="Area2D" unique_id=1003824480]
 script = ExtResource("1_ehdng")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1258574301]

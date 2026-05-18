@@ -8,7 +8,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4i404"]
 size = Vector2(33, 43)
 
-[node name="CharacterBody2D" type="CharacterBody2D" unique_id=259061177]
+[node name="Player" type="CharacterBody2D" unique_id=259061177 groups=["Player"]]
 script = ExtResource("1_kyqiw")
 speed = 300.0
 stats = ExtResource("2_dewec")

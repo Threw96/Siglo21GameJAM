@@ -8,6 +8,8 @@ signal upgrade_choices_ready(choices: Array[StatBuff])
 
 var pending_upgrade_choices: Array[StatBuff] = []
 
+var bullet = preload("res://Scenes/bullet_example.tscn")
+
 #texto de prueba para control de version
 func _ready() -> void:
 	Global.Player = self
@@ -27,6 +29,23 @@ func _physics_process(delta: float) -> void:
 	velocity = Direction * speed
 	
 	move_and_slide()
+
+func Shot():
+	var enemies = $Area2D.get_overlapping_bodies()
+	var closedEnemy: BabyAllien = null
+	var distance = INF
+	
+	for enemy in enemies:
+		if enemy.is_in_group("Enemy"):
+			if global_position.distance_squared_to(enemy.global_position) < distance:
+				closedEnemy = enemy
+		if closedEnemy != null:
+			$Weapon/DoubleBarrelShotgunIcon.look_at(closedEnemy.global_position)
+			var b = bullet.instantiate()
+			add_child(b)
+			var pos: Vector2 = $Weapon/DoubleBarrelShotgunIcon/pivot.global_position
+			b.Direction = pos.direction_to(closedEnemy.global_position)
+			
 	
 func add_experience(amount: float) -> void:
 	if stats == null:
@@ -64,10 +83,16 @@ func _get_upgrade_choice_names(choices: Array[StatBuff]) -> Array[String]:
 func TakeDamage(damage: int) -> void:
 	if stats == null:
 		return
+	$CPUParticles2D.emitting = true
 	stats.health -= damage
 	print("Player vida: %s / %s" % [stats.health, stats.current_max_health])
+	
 	if stats.health <= 0: Die()
 	
 func Die() -> void:
 	queue_free()
 	print("mori")
+
+
+func _on_cd_timeout() -> void:
+	Shot()

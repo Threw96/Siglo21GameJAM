@@ -1,5 +1,5 @@
 extends CharacterBody2D
-
+class_name BabyAllien
 
 @export var speed: float = 200 
 @export var max_health: float = 3.0

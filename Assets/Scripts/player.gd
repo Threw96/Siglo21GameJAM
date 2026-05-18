@@ -2,7 +2,7 @@ extends CharacterBody2D
 
 
 @export var speed: float = 10  
-
+@export var stats: Stats
 
 #texto de prueba para control de version
 func _ready() -> void:

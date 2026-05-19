@@ -2,14 +2,22 @@
 
 [ext_resource type="Script" uid="uid://djg85hjivk031" path="res://Assets/Scripts/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://cqacq1kjny1h1" path="res://Assets/Images/one_handed.png" id="1_rpqav"]
+[ext_resource type="Resource" uid="uid://cvbkysd12sl6x" path="res://Assets/Resources/Player_stats.tres" id="2_dewec"]
 [ext_resource type="Texture2D" uid="uid://snwfuhtryh00" path="res://Assets/Images/double_barrel_shotgun_icon.png" id="3_gntrk"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4i404"]
 size = Vector2(33, 43)
 
-[node name="CharacterBody2D" type="CharacterBody2D" unique_id=259061177]
+[sub_resource type="CircleShape2D" id="CircleShape2D_dewec"]
+radius = 256.32205
+
+[node name="Player" type="CharacterBody2D" unique_id=259061177 groups=["Player"]]
+collision_layer = 4
+collision_mask = 3
+motion_mode = 1
 script = ExtResource("1_kyqiw")
 speed = 300.0
+stats = ExtResource("2_dewec")
 
 [node name="OneHanded" type="Sprite2D" parent="." unique_id=142532754]
 scale = Vector2(0.17, 0.17)
@@ -29,5 +37,32 @@ rotation = 0.37350044
 scale = Vector2(0.15000002, 0.15000002)
 texture = ExtResource("3_gntrk")
 
-[node name="Marker2D" type="Marker2D" parent="Weapon/DoubleBarrelShotgunIcon" unique_id=577706523]
+[node name="pivot" type="Marker2D" parent="Weapon/DoubleBarrelShotgunIcon" unique_id=577706523]
 position = Vector2(73.33331, 53.333336)
+
+[node name="cd" type="Timer" parent="Weapon" unique_id=829305007]
+wait_time = 0.2
+autostart = true
+
+[node name="CPUParticles2D" type="CPUParticles2D" parent="." unique_id=29696085]
+emitting = false
+lifetime = 0.5
+one_shot = true
+gravity = Vector2(0, 980.515)
+initial_velocity_min = 191.0
+initial_velocity_max = 191.0
+scale_amount_min = 3.0
+scale_amount_max = 8.0
+color = Color(1, 0, 0, 1)
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1366566080]
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=764804251]
+shape = SubResource("CircleShape2D_dewec")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1174844713]
+zoom = Vector2(0.675, 0.675)
+position_smoothing_enabled = true
+
+[connection signal="timeout" from="Weapon/cd" to="." method="_on_cd_timeout"]

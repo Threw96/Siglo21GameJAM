@@ -10,12 +10,19 @@ radius = 4.0
 script = ExtResource("1_am2t0")
 
 [node name="Rock" type="Sprite2D" parent="." unique_id=2111419588]
-scale = Vector2(0.025, 0.023046875)
+scale = Vector2(0.1, 0.092)
 texture = ExtResource("1_vergw")
 
 [node name="Area2D" type="Area2D" parent="." unique_id=464487229]
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=362577458]
 shape = SubResource("CircleShape2D_am2t0")
 
+[node name="Timer" type="Timer" parent="." unique_id=765338498]
+wait_time = 3.0
+one_shot = true
+autostart = true
+
 [connection signal="body_entered" from="Area2D" to="." method="_on_area_2d_body_entered"]
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

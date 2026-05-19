@@ -61,4 +61,8 @@ collision_mask = 2
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=764804251]
 shape = SubResource("CircleShape2D_dewec")
 
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1174844713]
+zoom = Vector2(0.675, 0.675)
+position_smoothing_enabled = true
+
 [connection signal="timeout" from="Weapon/cd" to="." method="_on_cd_timeout"]

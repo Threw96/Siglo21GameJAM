@@ -8,7 +8,7 @@ signal upgrade_choices_ready(choices: Array[StatBuff])
 
 var pending_upgrade_choices: Array[StatBuff] = []
 
-var bullet = preload("res://Scenes/bullet_example.tscn")
+var bullet: PackedScene = preload("res://Scenes/bullet_example.tscn")
 
 #texto de prueba para control de version
 func _ready() -> void:
@@ -30,27 +30,41 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 
-func Shot():
-	var enemies = $Area2D.get_overlapping_bodies()
+func Shot() -> void:
+	if stats == null:
+		return
+	var enemies: Array[Node2D] = $Area2D.get_overlapping_bodies()
 	var closedEnemy: BabyAllien = null
-	var distance = INF
+	var distance: float = INF
 	
 	for enemy in enemies:
 		if enemy.is_in_group("Enemy"):
-			if global_position.distance_squared_to(enemy.global_position) < distance:
-				closedEnemy = enemy
-		if closedEnemy != null:
-			$Weapon/DoubleBarrelShotgunIcon.look_at(closedEnemy.global_position)
-			var b = bullet.instantiate()
-			add_child(b)
-			var pos: Vector2 = $Weapon/DoubleBarrelShotgunIcon/pivot.global_position
-			b.Direction = pos.direction_to(closedEnemy.global_position)
+			var enemy_node: BabyAllien = enemy as BabyAllien
+			if enemy_node == null:
+				continue
+			var enemy_distance: float = global_position.distance_squared_to(enemy_node.global_position)
+			if enemy_distance < distance:
+				distance = enemy_distance
+				closedEnemy = enemy_node
+	if closedEnemy == null:
+		return
+
+	$Weapon/DoubleBarrelShotgunIcon.look_at(closedEnemy.global_position)
+	var b: Node = bullet.instantiate()
+	var parent: Node = get_parent()
+	if parent == null:
+		return
+	parent.add_child(b)
+	var pos: Vector2 = $Weapon/DoubleBarrelShotgunIcon/pivot.global_position
+	if b.has_method("launch"):
+		b.call("launch", pos, closedEnemy.global_position, stats.current_attack)
 			
 	
 func add_experience(amount: float) -> void:
 	if stats == null:
 		return
 	stats.add_experience(amount)
+	print("Player XP: %s | Nivel: %s | Falta: %s" % [stats.experience, stats.level, stats.get_experience_to_next_level()])
 
 func choose_upgrade(choice_index: int) -> void:
 	if choice_index < 0 or choice_index >= pending_upgrade_choices.size():
@@ -83,7 +97,7 @@ func _get_upgrade_choice_names(choices: Array[StatBuff]) -> Array[String]:
 func TakeDamage(damage: int) -> void:
 	if stats == null:
 		return
-	$CPUParticles2D.emitting = true
+	$CPUParticles2D.restart()
 	stats.health -= damage
 	print("Player vida: %s / %s" % [stats.health, stats.current_max_health])
 	

@@ -120,4 +120,5 @@ func on_experience_set(new_value:float ) ->void:
 	
 	if not old_level == level:
 		recalculate_stats()
+		health = current_max_health
 		leveled_up.emit(level, old_level)

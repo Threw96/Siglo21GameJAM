@@ -30,7 +30,7 @@ position = Vector2(1083, 0)
 position = Vector2(-1, 641)
 
 [node name="Timer" type="Timer" parent="." unique_id=2144085336]
-wait_time = 4.0
+wait_time = 0.2
 autostart = true
 
 [node name="Player" parent="." unique_id=259061177 instance=ExtResource("1_fuxb2")]

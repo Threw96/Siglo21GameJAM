@@ -5,7 +5,9 @@ class_name Stats
 enum BuffableStats {
 	MAX_HEALTH,
 	DEFENSE,
-	ATTACK
+	ATTACK,
+	MOVE_SPEED,
+	FIRE_RATE
 }
 
 const STAT_CURVES: Dictionary[BuffableStats, Curve] = {
@@ -18,11 +20,15 @@ const BASE_LEVEL_EXP: float = 100.0
 
 signal health_depleted
 signal health_changed(cur_health: float , max_health:float)
+signal experience_changed(experience: float, level: int)
+signal stats_changed
 signal leveled_up(new_level: int, old_level: int)
 
 @export var base_max_health: float = 100
 @export var base_defense: float = 10
 @export var base_attack: float = 10
+@export var base_move_speed: float = 300
+@export var base_fire_rate: float = 5
 @export var experience: float = 0: set = on_experience_set
 
 var level: int:
@@ -31,6 +37,8 @@ var level: int:
 var current_max_health: float = 100
 var current_defense: float = 10
 var current_attack: float = 10
+var current_move_speed: float = 300
+var current_fire_rate: float = 5
 var health: float = 0 : set = _on_health_set
 
 var stat_buffs: Array[StatBuff]
@@ -47,15 +55,23 @@ func setup_stats() -> void:
 	else:
 		var health_ratio: float = previous_health / previous_max_health
 		health = current_max_health * health_ratio
+	stats_changed.emit()
 
-func add_buff(buff: StatBuff) ->void:
+func add_buff(buff: StatBuff, heal_to_max: bool = false) ->void:
 	stat_buffs.append(buff)
-	recalculate_stats.call_deferred()
+	_recalculate_stats_and_refresh_health(heal_to_max)
 	
 func remove_buff(buff: StatBuff) ->void:
 	stat_buffs.erase(buff)
-	recalculate_stats.call_deferred()
-	
+	_recalculate_stats_and_refresh_health(false)
+
+func _recalculate_stats_and_refresh_health(heal_to_max: bool = false) -> void:
+	recalculate_stats()
+	if heal_to_max:
+		health = current_max_health
+	else:
+		health = health
+	stats_changed.emit()
 	
 func recalculate_stats() -> void:
 	var stat_multipliers: Dictionary = {}
@@ -80,6 +96,8 @@ func recalculate_stats() -> void:
 	current_max_health = base_max_health * _get_curve_multiplier(BuffableStats.MAX_HEALTH, stat_sample_pos)
 	current_defense = base_defense * _get_curve_multiplier(BuffableStats.DEFENSE, stat_sample_pos)
 	current_attack = base_attack * _get_curve_multiplier(BuffableStats.ATTACK, stat_sample_pos)
+	current_move_speed = base_move_speed * _get_curve_multiplier(BuffableStats.MOVE_SPEED, stat_sample_pos)
+	current_fire_rate = base_fire_rate * _get_curve_multiplier(BuffableStats.FIRE_RATE, stat_sample_pos)
 	
 	#aplica mejoras de nivel por multiplicador
 	for stat_name in stat_multipliers:
@@ -98,6 +116,8 @@ func _on_health_set(new_value: float) -> void:
 		health_depleted.emit()
 
 func _get_curve_multiplier(stat: BuffableStats, sample_pos: float) -> float:
+	if not STAT_CURVES.has(stat):
+		return 1.0
 	var level_one_sample_pos: float = (1.0 / 100.0) - 0.01
 	var level_one_value: float = STAT_CURVES[stat].sample(level_one_sample_pos)
 	if is_zero_approx(level_one_value):
@@ -111,6 +131,22 @@ func get_experience_for_level(target_level: int) -> float:
 	var normalized_level: float = float(max(target_level, 1)) - 0.5
 	return normalized_level * normalized_level * BASE_LEVEL_EXP
 
+func get_experience_for_level_start(target_level: int) -> float:
+	if target_level <= 1:
+		return 0.0
+	return get_experience_for_level(target_level)
+
+func get_current_level_experience() -> float:
+	return maxf(experience - get_experience_for_level_start(level), 0.0)
+
+func get_next_level_required_experience() -> float:
+	var current_level_start: float = get_experience_for_level_start(level)
+	var next_level_start: float = get_experience_for_level(level + 1)
+	return maxf(next_level_start - current_level_start, 1.0)
+
+func get_level_progress_ratio() -> float:
+	return clampf(get_current_level_experience() / get_next_level_required_experience(), 0.0, 1.0)
+
 func get_experience_to_next_level() -> float:
 	return maxf(get_experience_for_level(level + 1) - experience, 0.0)
 
@@ -121,4 +157,6 @@ func on_experience_set(new_value:float ) ->void:
 	if not old_level == level:
 		recalculate_stats()
 		health = current_max_health
+		stats_changed.emit()
 		leveled_up.emit(level, old_level)
+	experience_changed.emit(experience, level)

@@ -11,6 +11,20 @@ size = Vector2(33, 43)
 [sub_resource type="CircleShape2D" id="CircleShape2D_dewec"]
 radius = 256.32205
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_bg"]
+bg_color = Color(0.08, 0.04, 0.04, 0.85)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_fill"]
+bg_color = Color(0.88, 0.12, 0.12, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
 [node name="Player" type="CharacterBody2D" unique_id=259061177 groups=["Player"]]
 collision_layer = 4
 collision_mask = 3
@@ -26,6 +40,15 @@ texture = ExtResource("1_rpqav")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1724357133]
 position = Vector2(-0.5, 0.5)
 shape = SubResource("RectangleShape2D_4i404")
+
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=646925469]
+offset_left = -24.0
+offset_top = 28.0
+offset_right = 24.0
+offset_bottom = 34.0
+theme_override_styles/background = SubResource("StyleBoxFlat_health_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
+show_percentage = false
 
 [node name="Weapon" type="Node2D" parent="." unique_id=1680010114]
 position = Vector2(-1, 18)

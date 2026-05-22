@@ -51,7 +51,8 @@ Ideas futuras del GDD:
 - `Assets/Scripts/Stats.gd`: recurso de estadisticas, vida, experiencia, nivel y buffs.
 - `Assets/Scripts/stat_buff.gd`: recurso que representa una mejora aplicada a un stat.
 - `Assets/Scripts/player.gd`: movimiento, disparo, daño recibido, experiencia y level up del jugador.
-- `enemigo1.gd`: IA basica del enemigo, ataque al jugador, vida, muerte y drop de gemas.
+- `Assets/Scripts/enemy.gd`: clase base para enemigos, vida, daño recibido, muerte y drop de gemas.
+- `enemigo1.gd`: IA especifica del enemigo BabyAllien, movimiento y ataque al jugador.
 - `Assets/Scripts/bullet_example.gd`: proyectil que viaja recto y daña enemigos.
 - `Assets/Scripts/gema.gd`: gema recolectable que entrega experiencia.
 - `Assets/Scripts/spawn.gd`: spawner de enemigos.
@@ -133,6 +134,26 @@ Cuando cambia `health`, se llama a `_on_health_set()`:
 - Si llega a `0`, emite `health_depleted`.
 
 Esto permite conectar UI de barra de vida o logica de muerte sin duplicar codigo.
+
+### Daño y defensa
+
+El daño al jugador se centraliza en `Stats.take_damage(raw_damage)`.
+
+Flujo:
+
+1. Recibe daño bruto.
+2. Calcula daño final con `get_damage_after_defense()`.
+3. Resta el daño final a `health`.
+4. Emite `damage_taken(raw_damage, final_damage)`.
+5. Devuelve el daño final aplicado.
+
+Actualmente la defensa reduce daño plano:
+
+```gdscript
+maxf(raw_damage - current_defense, 1.0)
+```
+
+Eso asegura que un golpe valido siempre haga al menos `1` de daño. Si mas adelante queres defensa porcentual, este es el lugar para cambiar la formula.
 
 ### Curvas de stats
 
@@ -293,19 +314,19 @@ Si la mejora elegida afecta `MAX_HEALTH`, `Player` pide que `Stats` cure al maxi
 
 1. Verifica que existan stats.
 2. Reinicia la particula `CPUParticles2D`.
-3. Resta vida.
-4. Imprime vida actual y vida maxima.
+3. Llama `stats.take_damage()`.
+4. El calculo de defensa ocurre dentro de `Stats`.
 5. Si la vida llega a 0, llama `Die()`.
 
 `Die()` elimina al player con `queue_free()`.
 
-Mejora recomendada: mover la logica de daño a `Stats`, por ejemplo `stats.take_damage(damage)`, para aplicar defensa correctamente y centralizar reglas.
+Los logs de daño solo aparecen si el modo debug esta activo.
 
-## Enemigo BabyAllien
+## Clase base Enemy
 
-Archivo: `enemigo1.gd`
+Archivo: `Assets/Scripts/enemy.gd`
 
-El enemigo extiende `CharacterBody2D` y tiene `class_name BabyAllien`.
+`Enemy` extiende `CharacterBody2D` y concentra la logica compartida por enemigos.
 
 Variables exportadas:
 
@@ -314,6 +335,22 @@ Variables exportadas:
 - `experience_value`: experiencia que dara la gema al morir.
 - `gem_scene`: escena de la gema que dropea.
 - `damage`: daño que aplica al jugador.
+
+Responsabilidades:
+
+- Agregarse al grupo `"Enemy"`.
+- Inicializar `health`.
+- Recibir daño con `TakeDamage()`.
+- Morir con `_die()`.
+- Soltar gema con `_drop_gem()`.
+
+Para crear un enemigo nuevo, heredar de `Enemy` y escribir solo su comportamiento particular.
+
+## Enemigo BabyAllien
+
+Archivo: `enemigo1.gd`
+
+`BabyAllien` hereda de `Enemy` y tiene `class_name BabyAllien`.
 
 ### Movimiento y ataque
 
@@ -338,19 +375,12 @@ En `_physics_process()`:
 
 ### Recibir daño y morir
 
-`TakeDamage(damage_amount)` resta vida. Si llega a 0, llama `_die()`.
-
-`_die()`:
-
-1. Llama `_drop_gem()`.
-2. Hace `queue_free()`.
-
-`_drop_gem()` instancia `Scenes/Gema.tscn`, le pasa `experience_value` y la agrega al padre del enemigo.
+BabyAllien hereda `TakeDamage()`, `_die()` y `_drop_gem()` desde `Enemy`.
 
 Para crear enemigos nuevos:
 
 1. Crear una nueva escena parecida a `enemigo1.tscn`.
-2. Usar un script similar o heredar una clase base.
+2. Crear un script que haga `extends Enemy`.
 3. Ajustar `speed`, `max_health`, `damage` y `experience_value`.
 4. Cambiar el preload en `spawn.gd` si queres que el spawner use ese enemigo.
 
@@ -586,6 +616,20 @@ godot
 
 Si abrís desde Steam, conviene crear la variable de entorno de usuario en Windows y reiniciar Steam para que Godot la herede.
 
+Tambien se puede activar desde un archivo `.env` en la raiz del proyecto. Formatos aceptados:
+
+```text
+SIGLO21_DEBUG=1
+```
+
+o estilo PowerShell:
+
+```powershell
+$env:SIGLO21_DEBUG="1"
+```
+
+Si existe `.env`, `Global.gd` lo lee al iniciar y usa ese valor antes de consultar `OS.get_environment()`.
+
 ## Spawner
 
 Archivo: `Assets/Scripts/spawn.gd`
@@ -751,36 +795,23 @@ Editar `Assets/Scripts/upgrade_menu.gd` para comportamiento.
 
 ## Ideas de mejora
 
-### 1. Separar daño y defensa en Stats
+### 1. Profundizar daño y defensa
 
-Ahora el player resta daño directamente:
+El daño y la defensa ya estan centralizados en `Stats.take_damage()`. Proximas mejoras posibles:
 
-```gdscript
-stats.health -= damage
-```
+- Defensa porcentual en vez de defensa plana.
+- Tipos de daño, por ejemplo fisico, electrico o fuego.
+- Invulnerabilidad breve despues de recibir daño.
+- Señales de feedback para sonido, camara o animaciones.
 
-Seria mejor crear:
+### 2. Expandir clases de enemigos
 
-```gdscript
-func take_damage(raw_damage: float) -> void:
-	var final_damage := maxf(raw_damage - current_defense, 1.0)
-	health -= final_damage
-```
+`Enemy.gd` ya existe como clase base y `BabyAllien` hereda de ella. Proximas mejoras posibles:
 
-Asi todas las reglas de vida y defensa quedan en `Stats`.
-
-### 2. Crear una clase base para enemigos
-
-Si vas a tener muchos enemigos, conviene crear `Enemy.gd` con:
-
-- Vida.
-- Daño.
-- Experiencia.
-- Drop.
-- `TakeDamage()`.
-- `_die()`.
-
-Despues `BabyAllien` puede heredar de esa clase.
+- Enemigos con stats propios usando `Stats`.
+- Enemigos que no dropeen gemas siempre.
+- Minijefes con ataques especiales.
+- Jefes con fases.
 
 ### 3. Mejorar el sistema de mejoras
 

@@ -47,12 +47,12 @@ func Shot() -> void:
 	if stats == null:
 		return
 	var enemies: Array[Node2D] = $Area2D.get_overlapping_bodies()
-	var closedEnemy: BabyAllien = null
+	var closedEnemy: Enemy = null
 	var distance: float = INF
 	
 	for enemy in enemies:
 		if enemy.is_in_group("Enemy"):
-			var enemy_node: BabyAllien = enemy as BabyAllien
+			var enemy_node: Enemy = enemy as Enemy
 			if enemy_node == null:
 				continue
 			var enemy_distance: float = global_position.distance_squared_to(enemy_node.global_position)
@@ -135,8 +135,8 @@ func TakeDamage(damage: int) -> void:
 	if stats == null:
 		return
 	$CPUParticles2D.restart()
-	stats.health -= damage
-	Global.debug_log("Player vida: %s / %s" % [stats.health, stats.current_max_health])
+	var final_damage: float = stats.take_damage(float(damage))
+	Global.debug_log("Player recibio %s de dano (%s bruto). Vida: %s / %s" % [final_damage, damage, stats.health, stats.current_max_health])
 	
 	if stats.health <= 0: Die()
 	

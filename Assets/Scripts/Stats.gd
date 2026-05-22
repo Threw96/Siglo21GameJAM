@@ -20,6 +20,7 @@ const BASE_LEVEL_EXP: float = 100.0
 
 signal health_depleted
 signal health_changed(cur_health: float , max_health:float)
+signal damage_taken(raw_damage: float, final_damage: float)
 signal experience_changed(experience: float, level: int)
 signal stats_changed
 signal leveled_up(new_level: int, old_level: int)
@@ -114,6 +115,17 @@ func _on_health_set(new_value: float) -> void:
 	health_changed.emit(health,current_max_health)
 	if health <= 0:
 		health_depleted.emit()
+
+func take_damage(raw_damage: float) -> float:
+	var final_damage: float = get_damage_after_defense(raw_damage)
+	health -= final_damage
+	damage_taken.emit(raw_damage, final_damage)
+	return final_damage
+
+func get_damage_after_defense(raw_damage: float) -> float:
+	if raw_damage <= 0.0:
+		return 0.0
+	return maxf(raw_damage - current_defense, 1.0)
 
 func _get_curve_multiplier(stat: BuffableStats, sample_pos: float) -> float:
 	if not STAT_CURVES.has(stat):

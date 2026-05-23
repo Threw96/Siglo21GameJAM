@@ -15,6 +15,7 @@ metadata/_custom_type_script = "uid://blb2amqjlipn8"
 
 [node name="CharacterBody2D2" parent="." unique_id=1511046092 instance=ExtResource("2_4mosc")]
 position = Vector2(156, 307.00003)
+max_health = 10.0
 
 [node name="spawn" type="Node2D" parent="." unique_id=1039921552]
 script = ExtResource("3_t1snq")

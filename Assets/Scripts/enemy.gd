@@ -34,7 +34,7 @@ func TakeDamage(damage_amount: float, damage_type: Stats.DamageType = Stats.Dama
 	else:
 		health -= damage_amount
 	_update_phase()
-	Global.debug_log("%s vida: %s / %s" % [name, health, _get_max_health()])
+	#Global.debug_log("%s vida: %s / %s" % [name, health, _get_max_health()])
 	if health <= 0.0 and stats == null:
 		_die()
 

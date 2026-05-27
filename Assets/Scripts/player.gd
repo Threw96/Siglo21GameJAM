@@ -121,9 +121,9 @@ func _build_upgrade_choices(new_level: int) -> Array[StatBuff]:
 		StatBuff.new(Stats.BuffableStats.PICKUP_RANGE, 45.0, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Iman de chatarra"),
 		StatBuff.new(Stats.BuffableStats.WEAPON_RANGE, 40.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Mira telescopica"),
 		StatBuff.new(Stats.BuffableStats.DAMAGE_REDUCTION, 0.05, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Blindaje de vapor"),
-		StatBuff.new(Stats.BuffableStats.PHYSICAL_RESISTANCE, 0.08, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Amortiguadores"),
-		StatBuff.new(Stats.BuffableStats.ELECTRIC_RESISTANCE, 0.10, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Guantes aislantes"),
-		StatBuff.new(Stats.BuffableStats.FIRE_RESISTANCE, 0.10, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Traje ignifugo"),
+		#StatBuff.new(Stats.BuffableStats.PHYSICAL_RESISTANCE, 0.08, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Amortiguadores"),
+		#StatBuff.new(Stats.BuffableStats.ELECTRIC_RESISTANCE, 0.10, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Guantes aislantes"),
+		#StatBuff.new(Stats.BuffableStats.FIRE_RESISTANCE, 0.10, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Traje ignifugo"),
 		StatBuff.new(Stats.BuffableStats.PROJECTILE_COUNT, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 3, "Doble mecanismo"),
 	]
 	var available_pool: Array[StatBuff] = []

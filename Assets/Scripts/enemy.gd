@@ -5,26 +5,46 @@ class_name Enemy
 @export var max_health: float = 3.0
 @export var experience_value: float = 25.0
 @export var gem_scene: PackedScene = preload("res://Scenes/Gema.tscn")
+@export_range(0.0, 1.0, 0.01) var drop_gem_chance: float = 1.0
 @export var damage: int = 1
+@export var damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL
+@export var stats: Stats
+@export var phase_health_ratios: Array[float] = []
 
 var health: float
+var current_phase: int = 0
+
+signal phase_changed(new_phase: int)
 
 func _ready() -> void:
 	add_to_group("Enemy")
-	health = max_health
+	if stats != null:
+		if not stats.health_depleted.is_connected(_die):
+			stats.health_depleted.connect(_die)
+		stats.base_max_health = max_health
+		stats.setup_stats()
+		health = stats.health
+	else:
+		health = max_health
 
-func TakeDamage(damage_amount: float) -> void:
-	health -= damage_amount
-	Global.debug_log("%s vida: %s / %s" % [name, health, max_health])
-	if health <= 0.0:
+func TakeDamage(damage_amount: float, damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL) -> void:
+	if stats != null:
+		stats.take_damage(damage_amount, damage_type)
+		health = stats.health
+	else:
+		health -= damage_amount
+	_update_phase()
+	#Global.debug_log("%s vida: %s / %s" % [name, health, _get_max_health()])
+	if health <= 0.0 and stats == null:
 		_die()
 
 func _die() -> void:
+	Global.register_enemy_kill()
 	_drop_gem()
 	queue_free()
 
 func _drop_gem() -> void:
-	if gem_scene == null:
+	if gem_scene == null or randf() > drop_gem_chance:
 		return
 	var gem: Node2D = gem_scene.instantiate() as Node2D
 	if gem == null:
@@ -36,3 +56,24 @@ func _drop_gem() -> void:
 		return
 	parent.add_child(gem)
 	gem.global_position = global_position
+
+func _get_max_health() -> float:
+	if stats != null:
+		return stats.current_max_health
+	return max_health
+
+func _update_phase() -> void:
+	if phase_health_ratios.is_empty():
+		return
+	var health_ratio: float = health / maxf(_get_max_health(), 1.0)
+	var next_phase: int = current_phase
+	for index in range(phase_health_ratios.size()):
+		if health_ratio <= phase_health_ratios[index]:
+			next_phase = index + 1
+	if next_phase != current_phase:
+		current_phase = next_phase
+		phase_changed.emit(current_phase)
+		_on_phase_changed(current_phase)
+
+func _on_phase_changed(new_phase: int) -> void:
+	Global.debug_log("%s entro en fase %s" % [name, new_phase])

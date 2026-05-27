@@ -9,7 +9,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	
-	if Global.Player == null : return
+	if Global.Player == null or not is_instance_valid(Global.Player): return
 	
 	if canAttack:
 		Attack()
@@ -23,7 +23,7 @@ func Move():
 	
 func Attack():
 	if $Timer.time_left > 0: return
-	Global.Player.TakeDamage(damage)
+	Global.Player.TakeDamage(damage, damage_type)
 	$Timer.start()
 
 

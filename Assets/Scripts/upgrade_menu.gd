@@ -4,6 +4,7 @@ var player: Player
 var choices: Array[StatBuff] = []
 var buttons: Array[Button] = []
 var selected_index: int = 0
+var choice_locked: bool = false
 
 @onready var title_label: Label = $Panel/VBoxContainer/TitleLabel
 @onready var option_buttons: VBoxContainer = $Panel/VBoxContainer/OptionButtons
@@ -65,17 +66,36 @@ func _choose_selected_option() -> void:
 	_on_option_pressed(selected_index)
 
 func _on_option_pressed(index: int) -> void:
-	if player == null or index < 0 or index >= choices.size():
+	if choice_locked or player == null or index < 0 or index >= choices.size():
 		return
+	choice_locked = true
 	player.choose_upgrade(index)
-	get_tree().paused = false
 	queue_free()
 
 func _get_choice_text(choice: StatBuff) -> String:
 	var stat_name: String = String(Stats.BuffableStats.keys()[choice.stat]).capitalize().replace("_", " ")
+	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	var prefix: String = "[%s] " % rarity_name
+	if not choice.display_name.is_empty():
+		prefix += "%s - " % choice.display_name
 	match choice.buff_type:
 		StatBuff.BuffType.ADD:
-			return "+%.0f %s" % [choice.buff_amount, stat_name]
+			if _is_percentage_add_stat(choice.stat):
+				return "%s+%d%% %s" % [prefix, roundi(choice.buff_amount * 100.0), stat_name]
+			return "%s+%s %s" % [prefix, _format_number(choice.buff_amount), stat_name]
 		StatBuff.BuffType.MULTIPLY:
-			return "+%d%% %s" % [roundi(choice.buff_amount * 100.0), stat_name]
-	return stat_name
+			return "%s+%d%% %s" % [prefix, roundi(choice.buff_amount * 100.0), stat_name]
+	return "%s%s" % [prefix, stat_name]
+
+func _is_percentage_add_stat(stat: Stats.BuffableStats) -> bool:
+	return [
+		Stats.BuffableStats.DAMAGE_REDUCTION,
+		Stats.BuffableStats.PHYSICAL_RESISTANCE,
+		Stats.BuffableStats.ELECTRIC_RESISTANCE,
+		Stats.BuffableStats.FIRE_RESISTANCE,
+	].has(stat)
+
+func _format_number(value: float) -> String:
+	if is_equal_approx(value, roundf(value)):
+		return "%d" % roundi(value)
+	return "%.2f" % value

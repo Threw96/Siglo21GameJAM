@@ -5,6 +5,8 @@ var stats: Stats
 @onready var xp_bar: ProgressBar = $TopBar/XpBar
 @onready var xp_label: Label = $TopBar/XpBar/XpLabel
 @onready var level_label: Label = $LevelLabel
+@onready var time_label: Label = $RunInfo/TimeLabel
+@onready var kills_label: Label = $RunInfo/KillsLabel
 
 func setup(_stats: Stats) -> void:
 	stats = _stats
@@ -19,6 +21,12 @@ func setup(_stats: Stats) -> void:
 
 func _ready() -> void:
 	xp_label.visible = Global.debug_enabled
+	if not Global.survived_time_changed.is_connected(_on_survived_time_changed):
+		Global.survived_time_changed.connect(_on_survived_time_changed)
+	if not Global.enemies_killed_changed.is_connected(_on_enemies_killed_changed):
+		Global.enemies_killed_changed.connect(_on_enemies_killed_changed)
+	_on_survived_time_changed(Global.survived_time)
+	_on_enemies_killed_changed(Global.enemies_killed)
 	if stats != null:
 		_update_hud()
 
@@ -38,3 +46,12 @@ func _update_hud() -> void:
 	xp_label.visible = Global.debug_enabled
 	xp_label.text = "%d / %d XP" % [roundi(current_xp), roundi(required_xp)]
 	level_label.text = "Nivel %s" % stats.level
+
+func _on_survived_time_changed(time_seconds: float) -> void:
+	var total_seconds: int = floori(time_seconds)
+	var minutes: int = int(total_seconds / 60)
+	var seconds: int = total_seconds % 60
+	time_label.text = "%02d:%02d" % [minutes, seconds]
+
+func _on_enemies_killed_changed(kill_count: int) -> void:
+	kills_label.text = "Kills %s" % kill_count

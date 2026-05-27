@@ -52,7 +52,11 @@ Ideas futuras del GDD:
 - `Assets/Scripts/stat_buff.gd`: recurso que representa una mejora aplicada a un stat.
 - `Assets/Scripts/player.gd`: movimiento, disparo, daño recibido, experiencia y level up del jugador.
 - `Assets/Scripts/enemy.gd`: clase base para enemigos, vida, daño recibido, muerte y drop de gemas.
+- `Assets/Scripts/miniboss_enemy.gd`: clase base para minijefes con ataque especial.
+- `Assets/Scripts/boss_enemy.gd`: clase base para jefes con fases.
 - `enemigo1.gd`: IA especifica del enemigo BabyAllien, movimiento y ataque al jugador.
+- `Assets/Scripts/weapon.gd`: clase base de armas.
+- `Assets/Scripts/projectile_weapon.gd`: arma de proyectiles usada por el player.
 - `Assets/Scripts/bullet_example.gd`: proyectil que viaja recto y daña enemigos.
 - `Assets/Scripts/gema.gd`: gema recolectable que entrega experiencia.
 - `Assets/Scripts/spawn.gd`: spawner de enemigos.
@@ -154,6 +158,8 @@ maxf(raw_damage - current_defense, 1.0)
 ```
 
 Eso asegura que un golpe valido siempre haga al menos `1` de daño. Si mas adelante queres defensa porcentual, este es el lugar para cambiar la formula.
+
+El sistema actual tambien soporta reduccion porcentual global, resistencias por tipo de daño (`PHYSICAL`, `ELECTRIC`, `FIRE`), invulnerabilidad breve con `set_invulnerable()`, y señales de feedback como `damage_taken` y `damage_blocked`.
 
 ### Curvas de stats
 
@@ -261,6 +267,8 @@ La escena `Player.tscn` tiene un `Timer` llamado `Weapon/cd`. Cuando hace timeou
 
 La bala se agrega al nivel y no al jugador para evitar que herede el movimiento del jugador. Si se agregara como hija del jugador, pareceria curvarse al moverse el player.
 
+El disparo actual esta separado en un sistema de armas: `Player` junta sus hijos que heredan de `Weapon` y llama `weapon.tick(delta, self, stats)`. El arma actual es `ProjectileWeapon`, que busca el enemigo mas cercano, instancia proyectiles y usa stats como daño, rango, fire rate y cantidad de proyectiles.
+
 ### Recibir experiencia
 
 `add_experience(amount)` delega en:
@@ -295,6 +303,10 @@ Mejoras actuales:
 Para modificar estas mejoras, editar `_build_upgrade_choices()`.
 
 Actualmente se arma un pool de mejoras y se eligen 3 al azar con `shuffle()`. Esto evita que las opciones sean siempre las mismas.
+
+Cada stat de mejora tiene un limite temporal de 3 elecciones. Cuando un stat llega a ese limite, deja de aparecer en el pool para evitar que la dificultad se rompa demasiado rapido.
+
+Si el jugador sube varios niveles de golpe, las pantallas de mejora se encolan: solo puede haber un menu activo, el juego permanece pausado, y al elegir una mejora aparece la siguiente seleccion pendiente.
 
 ### Elegir mejora
 
@@ -334,7 +346,10 @@ Variables exportadas:
 - `max_health`: vida maxima.
 - `experience_value`: experiencia que dara la gema al morir.
 - `gem_scene`: escena de la gema que dropea.
+- `drop_gem_chance`: probabilidad de soltar gema.
 - `damage`: daño que aplica al jugador.
+- `stats`: recurso opcional para enemigos con stats propios.
+- `phase_health_ratios`: umbrales de fase para jefes o enemigos especiales.
 
 Responsabilidades:
 
@@ -345,6 +360,8 @@ Responsabilidades:
 - Soltar gema con `_drop_gem()`.
 
 Para crear un enemigo nuevo, heredar de `Enemy` y escribir solo su comportamiento particular.
+
+Tambien hay clases listas para escenas futuras: `MiniBossEnemy` agrega ataque especial con cooldown, y `BossEnemy` usa fases para escalar daño y velocidad.
 
 ## Enemigo BabyAllien
 
@@ -460,6 +477,8 @@ Para cambiar cuanta experiencia da:
 - Cambiar `experience_value` en el enemigo.
 - O cambiar `experience_amount` por defecto en la gema.
 
+La gema ahora tiene recoleccion magnetica: si el player esta dentro de `stats.current_pickup_range`, se mueve hacia el personaje usando `attraction_speed`.
+
 ## Menu de mejoras
 
 Archivos:
@@ -529,6 +548,8 @@ El HUD muestra informacion importante durante la partida:
 - Barra de experiencia arriba de la pantalla.
 - Texto de nivel en la esquina superior izquierda.
 - Barra de vida debajo del personaje.
+- Tiempo sobrevivido.
+- Contador de enemigos derrotados.
 
 ### Barra de vida del player
 
@@ -652,6 +673,8 @@ Vector2(
 
 Luego agrega el enemigo como hijo del spawner y le asigna posicion global.
 
+El spawner ahora escala con `Global.survived_time`: reduce el tiempo entre oleadas, aumenta cantidad de enemigos, escala vida/daño/experiencia y puede generar enemigos fuera de camara con `spawn_outside_camera`.
+
 Para modificar spawn:
 
 - Cambiar `wait_time` del `Timer` en `level_1.tscn`.
@@ -680,6 +703,12 @@ Global.Player = self
 Los enemigos usan `Global.Player` para perseguir y atacar al jugador.
 
 Mejora recomendada: si el juego crece, evitar depender demasiado de `Global` y usar grupos o señales para desacoplar sistemas.
+
+## Pantalla inicial
+
+Archivo: `Scenes/Menu.tscn`
+
+El proyecto arranca en el menu inicial. `Iniciar partida` carga `Scenes/Nivel1/level_1.tscn`; `Salir` cierra el juego. El script asociado es `Assets/Scripts/main_menu.gd`.
 
 ## Escena principal Level 1
 
@@ -955,4 +984,4 @@ Tambien revisar las curvas de vida y que `_get_curve_multiplier()` siga normaliz
 
 ## Proximo paso recomendado
 
-El siguiente paso mas natural seria mejorar el pool de upgrades para que las 3 opciones no sean siempre las mismas. Tambien conviene reemplazar los `print()` de debug restantes por textos del HUD o por una variable `debug_enabled`.
+El siguiente paso mas natural seria probar balance en una partida completa: ritmo de spawn, daño recibido con defensa porcentual, fuerza de las rarezas y cuanto acelera el progreso la recoleccion magnetica.

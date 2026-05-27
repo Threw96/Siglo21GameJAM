@@ -4,10 +4,36 @@ extends Node
 var Player: Player = null
 var debug_enabled: bool = false
 var env_values: Dictionary[String, String] = {}
+var survived_time: float = 0.0
+var enemies_killed: int = 0
+var is_run_active: bool = false
+
+signal survived_time_changed(time_seconds: float)
+signal enemies_killed_changed(kill_count: int)
 
 func _ready() -> void:
 	env_values = _read_env_file()
 	debug_enabled = _read_debug_enabled()
+
+func _process(delta: float) -> void:
+	if not is_run_active:
+		return
+	survived_time += delta
+	survived_time_changed.emit(survived_time)
+
+func start_run() -> void:
+	survived_time = 0.0
+	enemies_killed = 0
+	is_run_active = true
+	survived_time_changed.emit(survived_time)
+	enemies_killed_changed.emit(enemies_killed)
+
+func stop_run() -> void:
+	is_run_active = false
+
+func register_enemy_kill() -> void:
+	enemies_killed += 1
+	enemies_killed_changed.emit(enemies_killed)
 
 func debug_log(message: String) -> void:
 	if debug_enabled:

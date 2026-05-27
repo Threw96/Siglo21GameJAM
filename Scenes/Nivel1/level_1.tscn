@@ -8,7 +8,17 @@
 [sub_resource type="Resource" id="Resource_3j6pp"]
 resource_local_to_scene = true
 script = ExtResource("2_3j6pp")
+metadata/_custom_type_script = "uid://blb2amqjlipn8"
+
+[sub_resource type="Resource" id="Resource_3n64g"]
+resource_local_to_scene = true
+script = ExtResource("2_3j6pp")
 base_max_health = 10.0
+base_damage_reduction = 0.1
+base_physical_resistance = 0.35
+base_electric_resistance = 0.02
+base_fire_resistance = 0.02
+base_pickup_range = 2.0
 metadata/_custom_type_script = "uid://blb2amqjlipn8"
 
 [node name="level1" type="Node2D" unique_id=892134322]
@@ -16,6 +26,7 @@ metadata/_custom_type_script = "uid://blb2amqjlipn8"
 [node name="CharacterBody2D2" parent="." unique_id=1511046092 instance=ExtResource("2_4mosc")]
 position = Vector2(156, 307.00003)
 max_health = 10.0
+stats = SubResource("Resource_3j6pp")
 
 [node name="spawn" type="Node2D" parent="." unique_id=1039921552]
 script = ExtResource("3_t1snq")
@@ -36,6 +47,6 @@ autostart = true
 
 [node name="Player" parent="." unique_id=259061177 instance=ExtResource("1_fuxb2")]
 position = Vector2(566, 328)
-stats = SubResource("Resource_3j6pp")
+stats = SubResource("Resource_3n64g")
 
 [connection signal="timeout" from="Timer" to="spawn" method="_on_timer_timeout"]

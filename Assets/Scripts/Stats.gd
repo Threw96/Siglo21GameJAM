@@ -7,7 +7,20 @@ enum BuffableStats {
 	DEFENSE,
 	ATTACK,
 	MOVE_SPEED,
-	FIRE_RATE
+	FIRE_RATE,
+	DAMAGE_REDUCTION,
+	PHYSICAL_RESISTANCE,
+	ELECTRIC_RESISTANCE,
+	FIRE_RESISTANCE,
+	PICKUP_RANGE,
+	PROJECTILE_COUNT,
+	WEAPON_RANGE
+}
+
+enum DamageType {
+	PHYSICAL,
+	ELECTRIC,
+	FIRE
 }
 
 const STAT_CURVES: Dictionary[BuffableStats, Curve] = {
@@ -20,7 +33,8 @@ const BASE_LEVEL_EXP: float = 100.0
 
 signal health_depleted
 signal health_changed(cur_health: float , max_health:float)
-signal damage_taken(raw_damage: float, final_damage: float)
+signal damage_taken(raw_damage: float, final_damage: float, damage_type: DamageType)
+signal damage_blocked(raw_damage: float, damage_type: DamageType)
 signal experience_changed(experience: float, level: int)
 signal stats_changed
 signal leveled_up(new_level: int, old_level: int)
@@ -30,6 +44,13 @@ signal leveled_up(new_level: int, old_level: int)
 @export var base_attack: float = 10
 @export var base_move_speed: float = 300
 @export var base_fire_rate: float = 5
+@export_range(0.0, 0.95, 0.01) var base_damage_reduction: float = 0.0
+@export_range(0.0, 0.95, 0.01) var base_physical_resistance: float = 0.0
+@export_range(0.0, 0.95, 0.01) var base_electric_resistance: float = 0.0
+@export_range(0.0, 0.95, 0.01) var base_fire_resistance: float = 0.0
+@export var base_pickup_range: float = 120
+@export var base_projectile_count: float = 1
+@export var base_weapon_range: float = 256
 @export var experience: float = 0: set = on_experience_set
 
 var level: int:
@@ -40,7 +61,15 @@ var current_defense: float = 10
 var current_attack: float = 10
 var current_move_speed: float = 300
 var current_fire_rate: float = 5
+var current_damage_reduction: float = 0
+var current_physical_resistance: float = 0
+var current_electric_resistance: float = 0
+var current_fire_resistance: float = 0
+var current_pickup_range: float = 120
+var current_projectile_count: float = 1
+var current_weapon_range: float = 256
 var health: float = 0 : set = _on_health_set
+var is_invulnerable: bool = false
 
 var stat_buffs: Array[StatBuff]
 
@@ -99,6 +128,13 @@ func recalculate_stats() -> void:
 	current_attack = base_attack * _get_curve_multiplier(BuffableStats.ATTACK, stat_sample_pos)
 	current_move_speed = base_move_speed * _get_curve_multiplier(BuffableStats.MOVE_SPEED, stat_sample_pos)
 	current_fire_rate = base_fire_rate * _get_curve_multiplier(BuffableStats.FIRE_RATE, stat_sample_pos)
+	current_damage_reduction = base_damage_reduction
+	current_physical_resistance = base_physical_resistance
+	current_electric_resistance = base_electric_resistance
+	current_fire_resistance = base_fire_resistance
+	current_pickup_range = base_pickup_range
+	current_projectile_count = base_projectile_count
+	current_weapon_range = base_weapon_range
 	
 	#aplica mejoras de nivel por multiplicador
 	for stat_name in stat_multipliers:
@@ -116,16 +152,34 @@ func _on_health_set(new_value: float) -> void:
 	if health <= 0:
 		health_depleted.emit()
 
-func take_damage(raw_damage: float) -> float:
-	var final_damage: float = get_damage_after_defense(raw_damage)
+func take_damage(raw_damage: float, damage_type: DamageType = DamageType.PHYSICAL) -> float:
+	if is_invulnerable:
+		damage_blocked.emit(raw_damage, damage_type)
+		return 0.0
+	var final_damage: float = get_damage_after_defense(raw_damage, damage_type)
 	health -= final_damage
-	damage_taken.emit(raw_damage, final_damage)
+	damage_taken.emit(raw_damage, final_damage, damage_type)
 	return final_damage
 
-func get_damage_after_defense(raw_damage: float) -> float:
+func get_damage_after_defense(raw_damage: float, damage_type: DamageType = DamageType.PHYSICAL) -> float:
 	if raw_damage <= 0.0:
 		return 0.0
-	return maxf(raw_damage - current_defense, 1.0)
+	var percent_reduction: float = clampf(current_damage_reduction + _get_resistance_for_damage_type(damage_type), 0.0, 0.95)
+	var reduced_damage: float = raw_damage * (1.0 - percent_reduction)
+	return maxf(reduced_damage - current_defense, 1.0)
+
+func set_invulnerable(value: bool) -> void:
+	is_invulnerable = value
+
+func _get_resistance_for_damage_type(damage_type: DamageType) -> float:
+	match damage_type:
+		DamageType.PHYSICAL:
+			return current_physical_resistance
+		DamageType.ELECTRIC:
+			return current_electric_resistance
+		DamageType.FIRE:
+			return current_fire_resistance
+	return 0.0
 
 func _get_curve_multiplier(stat: BuffableStats, sample_pos: float) -> float:
 	if not STAT_CURVES.has(stat):

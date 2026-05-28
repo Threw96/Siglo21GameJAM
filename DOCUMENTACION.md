@@ -302,9 +302,9 @@ Mejoras actuales:
 
 Para modificar estas mejoras, editar `_build_upgrade_choices()`.
 
-Actualmente se arma un pool de mejoras y se eligen 3 al azar con `shuffle()`. Esto evita que las opciones sean siempre las mismas.
+Actualmente se conserva el pool completo de mejoras y se eligen 3 opciones al azar con `shuffle()`. Esto evita que las opciones sean siempre las mismas.
 
-Cada stat de mejora tiene un limite temporal de 3 elecciones. Cuando un stat llega a ese limite, deja de aparecer en el pool para evitar que la dificultad se rompa demasiado rapido.
+Durante una partida, el jugador puede especializarse en un maximo de 4 stats distintos. Cada stat elegido tiene un limite temporal de 3 elecciones. Cuando un stat llega a ese limite, deja de aparecer en el pool; cuando ya hay 4 stats distintos elegidos, el menu solo ofrece mejoras de esos stats hasta que se agoten.
 
 Si el jugador sube varios niveles de golpe, las pantallas de mejora se encolan: solo puede haber un menu activo, el juego permanece pausado, y al elegir una mejora aparece la siguiente seleccion pendiente.
 
@@ -534,6 +534,21 @@ Nota: Godot ya trae acciones `ui_up`, `ui_down` y `ui_accept` por defecto. En es
 Para cambiar el estilo visual, editar `Scenes/UpgradeMenu.tscn`.
 
 Para cambiar nombres mas lindos, editar `_get_choice_text()`.
+
+## Menu de pausa y muerte
+
+Archivos:
+
+- `Assets/Scripts/pause_menu.gd`
+- `Scenes/PauseMenu.tscn`
+- `Assets/Scripts/death_menu.gd`
+- `Scenes/DeathMenu.tscn`
+
+Durante la partida, `Player.gd` escucha `Escape` y `Enter`. Si no hay menu de mejoras activo, instancia `PauseMenu.tscn`, pausa el arbol y muestra un panel lateral izquierdo.
+
+El panel de pausa muestra hasta 4 espacios de mejoras. Esos espacios se llenan con los stats distintos que el jugador eligio durante la partida y cada uno se muestra en formato `actual/3`. Si todavia no se eligieron 4 tipos distintos, los espacios restantes aparecen vacios.
+
+Si la vida llega a 0, `Player.Die()` detiene la run, limpia UI persistente agregada al root y carga `Scenes/DeathMenu.tscn`. Esa pantalla muestra `LA MUERTE HA ENCONTRADO` y un boton `Volver` que regresa a `Scenes/Menu.tscn`.
 
 ## HUD de partida
 
@@ -844,7 +859,7 @@ El daño y la defensa ya estan centralizados en `Stats.take_damage()`. Proximas 
 
 ### 3. Mejorar el sistema de mejoras
 
-Ahora las 3 mejoras son fijas.
+Ahora el pool de mejoras puede crecer, pero cada partida limita al jugador a 4 tipos distintos y cada uno puede elegirse como maximo 3 veces.
 
 Se puede mejorar con:
 

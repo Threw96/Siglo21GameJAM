@@ -7,16 +7,21 @@ class_name Player
 signal upgrade_choices_ready(choices: Array[StatBuff])
 
 const MAX_UPGRADE_STACKS_PER_STAT: int = 3
+const MAX_ACTIVE_UPGRADE_STATS: int = 4
 
 var pending_upgrade_choices: Array[StatBuff] = []
 var pending_upgrade_levels: Array[int] = []
 var upgrade_counts_by_stat: Dictionary[Stats.BuffableStats, int] = {}
 var upgrade_menu_active: bool = false
+var pause_menu_active: bool = false
+var is_dead: bool = false
 
 var bullet: PackedScene = preload("res://Scenes/bullet_example.tscn")
 var upgrade_menu_scene: PackedScene = preload("res://Scenes/UpgradeMenu.tscn")
+var pause_menu_scene: PackedScene = preload("res://Scenes/PauseMenu.tscn")
 var hud_scene: PackedScene = preload("res://Scenes/HUD.tscn")
 var hud: Node
+var pause_menu: Node
 var weapons: Array[Weapon] = []
 var invulnerability_timer: SceneTreeTimer
 
@@ -54,6 +59,16 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 	_tick_weapons(delta)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _is_pause_input(event):
+		return
+	if upgrade_menu_active or is_dead:
+		return
+	if get_tree().paused and not pause_menu_active:
+		return
+	toggle_pause_menu()
+	get_viewport().set_input_as_handled()
 
 func Shot() -> void:
 	_tick_weapons(999.0)
@@ -138,13 +153,35 @@ func _build_upgrade_choices(new_level: int) -> Array[StatBuff]:
 	return choices
 
 func _can_offer_upgrade(buff: StatBuff) -> bool:
-	return _get_upgrade_stack_count(buff.stat) < MAX_UPGRADE_STACKS_PER_STAT
+	if _get_upgrade_stack_count(buff.stat) >= MAX_UPGRADE_STACKS_PER_STAT:
+		return false
+	return _has_upgrade_stat_selected(buff.stat) or _get_selected_upgrade_stat_count() < MAX_ACTIVE_UPGRADE_STATS
 
 func _register_upgrade_stack(stat: Stats.BuffableStats) -> void:
 	upgrade_counts_by_stat[stat] = _get_upgrade_stack_count(stat) + 1
 
 func _get_upgrade_stack_count(stat: Stats.BuffableStats) -> int:
 	return int(upgrade_counts_by_stat.get(stat, 0))
+
+func _has_upgrade_stat_selected(stat: Stats.BuffableStats) -> bool:
+	return _get_upgrade_stack_count(stat) > 0
+
+func _get_selected_upgrade_stat_count() -> int:
+	var selected_count: int = 0
+	for stat in upgrade_counts_by_stat:
+		if int(upgrade_counts_by_stat[stat]) > 0:
+			selected_count += 1
+	return selected_count
+
+func get_upgrade_stack_count_for_ui(stat: Stats.BuffableStats) -> int:
+	return _get_upgrade_stack_count(stat)
+
+func get_available_upgrade_stats_for_ui() -> Array[Stats.BuffableStats]:
+	var selected_stats: Array[Stats.BuffableStats] = []
+	for stat in upgrade_counts_by_stat:
+		if int(upgrade_counts_by_stat[stat]) > 0:
+			selected_stats.append(stat)
+	return selected_stats
 
 func _get_upgrade_choice_names(choices: Array[StatBuff]) -> Array[String]:
 	var names: Array[String] = []
@@ -166,10 +203,15 @@ func TakeDamage(damage: int, damage_type: Stats.DamageType = Stats.DamageType.PH
 	if stats.health <= 0: Die()
 	
 func Die() -> void:
+	if is_dead:
+		return
+	is_dead = true
 	Global.stop_run()
 	if Global.Player == self:
 		Global.Player = null
-	queue_free()
+	cleanup_runtime_ui()
+	get_tree().paused = false
+	get_tree().call_deferred("change_scene_to_file", "res://Scenes/DeathMenu.tscn")
 	Global.debug_log("mori")
 
 func _on_stats_health_changed(cur_health: float, max_health: float) -> void:
@@ -213,6 +255,45 @@ func _tick_weapons(delta: float) -> void:
 		return
 	for weapon in weapons:
 		weapon.tick(delta, self, stats)
+
+func cleanup_runtime_ui() -> void:
+	if hud != null and is_instance_valid(hud):
+		hud.queue_free()
+	hud = null
+	if pause_menu != null and is_instance_valid(pause_menu):
+		pause_menu.queue_free()
+	pause_menu = null
+	pause_menu_active = false
+
+func toggle_pause_menu() -> void:
+	if pause_menu_active:
+		close_pause_menu()
+	else:
+		open_pause_menu()
+
+func open_pause_menu() -> void:
+	if pause_menu_active or pause_menu_scene == null:
+		return
+	pause_menu_active = true
+	pause_menu = pause_menu_scene.instantiate()
+	get_tree().root.add_child(pause_menu)
+	if pause_menu.has_method("setup"):
+		pause_menu.call("setup", self, stats)
+
+func close_pause_menu() -> void:
+	if pause_menu != null and is_instance_valid(pause_menu):
+		pause_menu.queue_free()
+	pause_menu = null
+	pause_menu_active = false
+	get_tree().paused = false
+
+func _is_pause_input(event: InputEvent) -> bool:
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("enter"):
+		return true
+	if not event is InputEventKey:
+		return false
+	var key_event: InputEventKey = event as InputEventKey
+	return key_event.pressed and not key_event.echo and (key_event.keycode == KEY_ESCAPE or key_event.keycode == KEY_ENTER)
 
 func _start_invulnerability() -> void:
 	stats.set_invulnerable(true)

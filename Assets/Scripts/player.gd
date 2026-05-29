@@ -6,8 +6,12 @@ class_name Player
 
 signal upgrade_choices_ready(choices: Array[StatBuff])
 
-const MAX_UPGRADE_STACKS_PER_STAT: int = 4
+const MAX_UPGRADE_STACKS_PER_STAT: int = 3
 const MAX_ACTIVE_UPGRADE_STATS: int = 4
+const MAX_WEAPON_SLOTS: int = 2
+const WEAPON_SHOTGUN: String = "shotgun"
+const WEAPON_LASER: String = "laser"
+const WEAPON_AXE: String = "axe"
 
 var pending_upgrade_choices: Array[StatBuff] = []
 var pending_upgrade_levels: Array[int] = []
@@ -24,6 +28,13 @@ var character_texture: Texture2D = preload("res://personajes.png")
 var hud: Node
 var pause_menu: Node
 var weapons: Array[Weapon] = []
+var owned_weapon_ids: Dictionary[String, bool] = {}
+var shotgun_weapon: ShotgunWeapon
+var laser_weapon: LaserWeapon
+var axe_weapon: AxeWeapon
+var shield_enabled: bool = false
+var shield_ready: bool = false
+var shield_cooldown_timer: float = 0.0
 var invulnerability_timer: SceneTreeTimer
 
 @onready var health_bar: ProgressBar = $HealthBar
@@ -45,7 +56,7 @@ func _ready() -> void:
 		_update_weapon_range()
 		_apply_selected_character_sprite()
 		_show_hud.call_deferred()
-	_collect_weapons()
+	_setup_starting_weapon()
 	Global.start_run()
 
 ###Funcion de godot en la que se ejecutan las fisicas 
@@ -60,6 +71,7 @@ func _physics_process(delta: float) -> void:
 	velocity = Direction * _get_current_speed()
 	
 	move_and_slide()
+	_tick_shield(delta)
 	_tick_weapons(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -86,9 +98,14 @@ func choose_upgrade(choice_index: int) -> void:
 	if choice_index < 0 or choice_index >= pending_upgrade_choices.size():
 		return
 	var selected_buff: StatBuff = pending_upgrade_choices[choice_index]
-	var heal_to_max: bool = selected_buff.stat == Stats.BuffableStats.MAX_HEALTH
 	_register_upgrade_stack(selected_buff.stat)
-	stats.add_buff(selected_buff, heal_to_max)
+	if _is_weapon_unlock(selected_buff.stat) or _is_weapon_upgrade(selected_buff.stat):
+		_apply_weapon_upgrade(selected_buff.stat)
+	elif selected_buff.stat == Stats.BuffableStats.SHIELD:
+		_apply_shield_upgrade()
+	else:
+		var heal_to_max: bool = selected_buff.stat == Stats.BuffableStats.MAX_HEALTH
+		stats.add_buff(selected_buff, heal_to_max)
 	pending_upgrade_choices.clear()
 	upgrade_menu_active = false
 	_show_next_upgrade_menu.call_deferred()
@@ -129,20 +146,10 @@ func _show_hud() -> void:
 
 func _build_upgrade_choices(new_level: int) -> Array[StatBuff]:
 	var amount_scale: float = 1.0 + (float(new_level) * 0.02)
-	var upgrade_pool: Array[StatBuff] = [
-		StatBuff.new(Stats.BuffableStats.MAX_HEALTH, 15.0 * amount_scale, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Caldera reforzada"),
-		StatBuff.new(Stats.BuffableStats.ATTACK, 0.15, StatBuff.BuffType.MULTIPLY, StatBuff.Rarity.COMMON, 1, "Presion ofensiva"),
-		StatBuff.new(Stats.BuffableStats.DEFENSE, 2.0 * amount_scale, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Placas remachadas"),
-		StatBuff.new(Stats.BuffableStats.MOVE_SPEED, 0.03, StatBuff.BuffType.MULTIPLY, StatBuff.Rarity.COMMON, 1, "Botas engrasadas"),
-		StatBuff.new(Stats.BuffableStats.FIRE_RATE, 0.12, StatBuff.BuffType.MULTIPLY, StatBuff.Rarity.COMMON, 1, "Valvula rapida"),
-		StatBuff.new(Stats.BuffableStats.PICKUP_RANGE, 45.0, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Iman de chatarra"),
-		StatBuff.new(Stats.BuffableStats.WEAPON_RANGE, 40.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Mira telescopica"),
-		StatBuff.new(Stats.BuffableStats.DAMAGE_REDUCTION, 0.05, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Blindaje de vapor"),
-		#StatBuff.new(Stats.BuffableStats.PHYSICAL_RESISTANCE, 0.08, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Amortiguadores"),
-		#StatBuff.new(Stats.BuffableStats.ELECTRIC_RESISTANCE, 0.10, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Guantes aislantes"),
-		#StatBuff.new(Stats.BuffableStats.FIRE_RESISTANCE, 0.10, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Traje ignifugo"),
-		StatBuff.new(Stats.BuffableStats.PROJECTILE_COUNT, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 3, "Doble mecanismo"),
-	]
+	var upgrade_pool: Array[StatBuff] = []
+	upgrade_pool.append_array(_build_character_upgrade_pool(amount_scale))
+	upgrade_pool.append_array(_build_weapon_unlock_pool(new_level))
+	upgrade_pool.append_array(_build_owned_weapon_upgrade_pool(new_level))
 	var available_pool: Array[StatBuff] = []
 	for buff in upgrade_pool:
 		if buff.min_level <= new_level and _can_offer_upgrade(buff):
@@ -154,10 +161,84 @@ func _build_upgrade_choices(new_level: int) -> Array[StatBuff]:
 		choices.append(available_pool[index])
 	return choices
 
+func _build_character_upgrade_pool(amount_scale: float) -> Array[StatBuff]:
+	return [
+		StatBuff.new(Stats.BuffableStats.MAX_HEALTH, 15.0 * amount_scale, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Caldera reforzada"),
+		StatBuff.new(Stats.BuffableStats.MOVE_SPEED, 0.03, StatBuff.BuffType.MULTIPLY, StatBuff.Rarity.COMMON, 1, "Botas engrasadas"),
+		StatBuff.new(Stats.BuffableStats.PICKUP_RANGE, 45.0, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Iman de chatarra"),
+		StatBuff.new(Stats.BuffableStats.DAMAGE_REDUCTION, 0.05, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Blindaje de vapor"),
+		StatBuff.new(Stats.BuffableStats.SHIELD, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Escudo de emergencia"),
+	]
+
+func _build_weapon_unlock_pool(new_level: int) -> Array[StatBuff]:
+	if new_level < 2 or weapons.size() >= MAX_WEAPON_SLOTS:
+		return []
+	return [
+		StatBuff.new(Stats.BuffableStats.SHOTGUN_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Shotgun"),
+		StatBuff.new(Stats.BuffableStats.LASER_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Bobina laser"),
+		StatBuff.new(Stats.BuffableStats.AXE_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Hacha orbital"),
+	]
+
+func _build_owned_weapon_upgrade_pool(_new_level: int) -> Array[StatBuff]:
+	var weapon_pool: Array[StatBuff] = []
+	if has_weapon(WEAPON_SHOTGUN):
+		_add_next_weapon_upgrade(weapon_pool, WEAPON_SHOTGUN)
+	if has_weapon(WEAPON_LASER):
+		_add_next_weapon_upgrade(weapon_pool, WEAPON_LASER)
+	if has_weapon(WEAPON_AXE):
+		_add_next_weapon_upgrade(weapon_pool, WEAPON_AXE)
+	return weapon_pool
+
+func _add_next_weapon_upgrade(weapon_pool: Array[StatBuff], weapon_id: String) -> void:
+	var next_upgrade: StatBuff = _get_next_weapon_upgrade(weapon_id)
+	if next_upgrade != null:
+		weapon_pool.append(next_upgrade)
+
+func _get_next_weapon_upgrade(weapon_id: String) -> StatBuff:
+	var upgrade_level: int = _get_weapon_upgrade_level(weapon_id)
+	match weapon_id:
+		WEAPON_SHOTGUN:
+			match upgrade_level:
+				0:
+					return StatBuff.new(Stats.BuffableStats.SHOTGUN_EXTRA_PROJECTILE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Cartucho doble")
+				1:
+					return StatBuff.new(Stats.BuffableStats.SHOTGUN_FIRE_RATE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Recarga rapida")
+				2:
+					return StatBuff.new(Stats.BuffableStats.SHOTGUN_DAMAGE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Municion pesada")
+		WEAPON_LASER:
+			match upgrade_level:
+				0:
+					return StatBuff.new(Stats.BuffableStats.LASER_EXTRA_BEAM, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Rayo gemelo")
+				1:
+					return StatBuff.new(Stats.BuffableStats.LASER_PIERCING, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Rayo perforante")
+				2:
+					return StatBuff.new(Stats.BuffableStats.LASER_DAMAGE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Bobina sobrecargada")
+		WEAPON_AXE:
+			match upgrade_level:
+				0:
+					return StatBuff.new(Stats.BuffableStats.AXE_COOLDOWN, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Engranaje liviano")
+				1:
+					return StatBuff.new(Stats.BuffableStats.AXE_EXTRA_AXE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Hacha gemela")
+				2:
+					return StatBuff.new(Stats.BuffableStats.AXE_DAMAGE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Filo reforzado")
+	return null
+
+func _get_weapon_upgrade_level(weapon_id: String) -> int:
+	var upgrade_level: int = 0
+	for stat_key in upgrade_counts_by_stat:
+		var stat: Stats.BuffableStats = stat_key
+		if _is_weapon_upgrade(stat) and _get_weapon_id_for_upgrade(stat) == weapon_id and int(upgrade_counts_by_stat[stat]) > 0:
+			upgrade_level += 1
+	return upgrade_level
+
 func _can_offer_upgrade(buff: StatBuff) -> bool:
+	if _is_weapon_unlock(buff.stat):
+		return _can_offer_weapon_unlock(buff.stat)
+	if _is_weapon_upgrade(buff.stat):
+		return _can_offer_weapon_upgrade(buff.stat)
 	if _get_upgrade_stack_count(buff.stat) >= MAX_UPGRADE_STACKS_PER_STAT:
 		return false
-	return _has_upgrade_stat_selected(buff.stat) or _get_selected_upgrade_stat_count() < MAX_ACTIVE_UPGRADE_STATS
+	return _has_upgrade_stat_selected(buff.stat) or _get_selected_character_upgrade_count() < MAX_ACTIVE_UPGRADE_STATS
 
 func _register_upgrade_stack(stat: Stats.BuffableStats) -> void:
 	upgrade_counts_by_stat[stat] = _get_upgrade_stack_count(stat) + 1
@@ -165,13 +246,50 @@ func _register_upgrade_stack(stat: Stats.BuffableStats) -> void:
 func _get_upgrade_stack_count(stat: Stats.BuffableStats) -> int:
 	return int(upgrade_counts_by_stat.get(stat, 0))
 
+func _is_weapon_unlock(stat: Stats.BuffableStats) -> bool:
+	return [
+		Stats.BuffableStats.SHOTGUN_WEAPON,
+		Stats.BuffableStats.LASER_WEAPON,
+		Stats.BuffableStats.AXE_WEAPON,
+	].has(stat)
+
+func _is_weapon_upgrade(stat: Stats.BuffableStats) -> bool:
+	return [
+		Stats.BuffableStats.SHOTGUN_EXTRA_PROJECTILE,
+		Stats.BuffableStats.SHOTGUN_FIRE_RATE,
+		Stats.BuffableStats.SHOTGUN_DAMAGE,
+		Stats.BuffableStats.LASER_EXTRA_BEAM,
+		Stats.BuffableStats.LASER_PIERCING,
+		Stats.BuffableStats.LASER_DAMAGE,
+		Stats.BuffableStats.AXE_COOLDOWN,
+		Stats.BuffableStats.AXE_EXTRA_AXE,
+		Stats.BuffableStats.AXE_DAMAGE,
+	].has(stat)
+
+func _can_offer_weapon_unlock(stat: Stats.BuffableStats) -> bool:
+	if weapons.size() >= MAX_WEAPON_SLOTS:
+		return false
+	return not has_weapon(_get_weapon_id_for_unlock(stat))
+
+func _can_offer_weapon_upgrade(stat: Stats.BuffableStats) -> bool:
+	return _get_upgrade_stack_count(stat) == 0 and has_weapon(_get_weapon_id_for_upgrade(stat))
+
+func _apply_weapon_upgrade(stat: Stats.BuffableStats) -> void:
+	if _is_weapon_unlock(stat):
+		add_weapon(_get_weapon_id_for_unlock(stat))
+		return
+	var weapon: Weapon = get_weapon(_get_weapon_id_for_upgrade(stat))
+	if weapon != null:
+		weapon.apply_upgrade(stat)
+
 func _has_upgrade_stat_selected(stat: Stats.BuffableStats) -> bool:
 	return _get_upgrade_stack_count(stat) > 0
 
-func _get_selected_upgrade_stat_count() -> int:
+func _get_selected_character_upgrade_count() -> int:
 	var selected_count: int = 0
-	for stat in upgrade_counts_by_stat:
-		if int(upgrade_counts_by_stat[stat]) > 0:
+	for stat_key in upgrade_counts_by_stat:
+		var stat: Stats.BuffableStats = stat_key
+		if int(upgrade_counts_by_stat[stat]) > 0 and _is_character_upgrade(stat):
 			selected_count += 1
 	return selected_count
 
@@ -180,10 +298,125 @@ func get_upgrade_stack_count_for_ui(stat: Stats.BuffableStats) -> int:
 
 func get_available_upgrade_stats_for_ui() -> Array[Stats.BuffableStats]:
 	var selected_stats: Array[Stats.BuffableStats] = []
-	for stat in upgrade_counts_by_stat:
-		if int(upgrade_counts_by_stat[stat]) > 0:
+	for stat_key in upgrade_counts_by_stat:
+		var stat: Stats.BuffableStats = stat_key
+		if int(upgrade_counts_by_stat[stat]) > 0 and _is_character_upgrade(stat):
 			selected_stats.append(stat)
 	return selected_stats
+
+func _is_character_upgrade(stat: Stats.BuffableStats) -> bool:
+	return [
+		Stats.BuffableStats.MAX_HEALTH,
+		Stats.BuffableStats.MOVE_SPEED,
+		Stats.BuffableStats.PICKUP_RANGE,
+		Stats.BuffableStats.DAMAGE_REDUCTION,
+		Stats.BuffableStats.SHIELD,
+	].has(stat)
+
+func _get_weapon_id_for_unlock(stat: Stats.BuffableStats) -> String:
+	match stat:
+		Stats.BuffableStats.SHOTGUN_WEAPON:
+			return WEAPON_SHOTGUN
+		Stats.BuffableStats.LASER_WEAPON:
+			return WEAPON_LASER
+		Stats.BuffableStats.AXE_WEAPON:
+			return WEAPON_AXE
+	return ""
+
+func _get_weapon_id_for_upgrade(stat: Stats.BuffableStats) -> String:
+	match stat:
+		Stats.BuffableStats.SHOTGUN_EXTRA_PROJECTILE, Stats.BuffableStats.SHOTGUN_FIRE_RATE, Stats.BuffableStats.SHOTGUN_DAMAGE:
+			return WEAPON_SHOTGUN
+		Stats.BuffableStats.LASER_EXTRA_BEAM, Stats.BuffableStats.LASER_PIERCING, Stats.BuffableStats.LASER_DAMAGE:
+			return WEAPON_LASER
+		Stats.BuffableStats.AXE_COOLDOWN, Stats.BuffableStats.AXE_EXTRA_AXE, Stats.BuffableStats.AXE_DAMAGE:
+			return WEAPON_AXE
+	return ""
+
+func has_weapon(weapon_id: String) -> bool:
+	return bool(owned_weapon_ids.get(weapon_id, false))
+
+func get_weapon(weapon_id: String) -> Weapon:
+	match weapon_id:
+		WEAPON_SHOTGUN:
+			return shotgun_weapon
+		WEAPON_LASER:
+			return laser_weapon
+		WEAPON_AXE:
+			return axe_weapon
+	return null
+
+func add_weapon(weapon_id: String) -> bool:
+	if weapon_id.is_empty() or has_weapon(weapon_id) or weapons.size() >= MAX_WEAPON_SLOTS:
+		return false
+	var weapon: Weapon = _get_or_create_weapon(weapon_id)
+	if weapon == null:
+		return false
+	if not weapons.has(weapon):
+		weapons.append(weapon)
+	owned_weapon_ids[weapon_id] = true
+	weapon.visible = true
+	return true
+
+func _get_or_create_weapon(weapon_id: String) -> Weapon:
+	match weapon_id:
+		WEAPON_SHOTGUN:
+			if shotgun_weapon == null or not is_instance_valid(shotgun_weapon):
+				shotgun_weapon = $Weapon as ShotgunWeapon
+			return shotgun_weapon
+		WEAPON_LASER:
+			if laser_weapon == null or not is_instance_valid(laser_weapon):
+				laser_weapon = LaserWeapon.new()
+				laser_weapon.name = "LaserWeapon"
+				add_child(laser_weapon)
+			return laser_weapon
+		WEAPON_AXE:
+			if axe_weapon == null or not is_instance_valid(axe_weapon):
+				axe_weapon = AxeWeapon.new()
+				axe_weapon.name = "AxeWeapon"
+				add_child(axe_weapon)
+			return axe_weapon
+	return null
+
+func _setup_starting_weapon() -> void:
+	weapons.clear()
+	owned_weapon_ids.clear()
+	shotgun_weapon = $Weapon as ShotgunWeapon
+	if shotgun_weapon != null:
+		shotgun_weapon.visible = false
+	match Global.selected_character_id:
+		0:
+			add_weapon(WEAPON_SHOTGUN)
+		1:
+			add_weapon(WEAPON_AXE)
+		2:
+			add_weapon(WEAPON_LASER)
+		_:
+			add_weapon(WEAPON_SHOTGUN)
+
+func _apply_shield_upgrade() -> void:
+	shield_enabled = true
+	shield_ready = true
+	shield_cooldown_timer = 0.0
+
+func _tick_shield(delta: float) -> void:
+	if not shield_enabled or shield_ready:
+		return
+	shield_cooldown_timer -= delta
+	if shield_cooldown_timer <= 0.0:
+		shield_ready = true
+		Global.debug_log("Escudo listo")
+
+func _get_shield_cooldown_seconds() -> float:
+	var shield_level: int = _get_upgrade_stack_count(Stats.BuffableStats.SHIELD)
+	match shield_level:
+		1:
+			return 60.0
+		2:
+			return 45.0
+		3:
+			return 30.0
+	return 60.0
 
 func _get_upgrade_choice_names(choices: Array[StatBuff]) -> Array[String]:
 	var names: Array[String] = []
@@ -195,6 +428,11 @@ func _get_upgrade_choice_names(choices: Array[StatBuff]) -> Array[String]:
 
 func TakeDamage(damage: int, damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL, defense_penetration: float = 0.0) -> void:
 	if stats == null:
+		return
+	if shield_ready:
+		shield_ready = false
+		shield_cooldown_timer = _get_shield_cooldown_seconds()
+		Global.debug_log("Escudo bloqueo %s de dano. Recarga en %s segundos" % [damage, shield_cooldown_timer])
 		return
 	var final_damage: float = stats.take_damage(float(damage), damage_type, defense_penetration)
 	if final_damage > 0.0:

@@ -6,6 +6,7 @@ class_name ProjectileWeapon
 @export var muzzle_path: NodePath = NodePath("DoubleBarrelShotgunIcon/pivot")
 @export var visual_path: NodePath = NodePath("DoubleBarrelShotgunIcon")
 @export var spread_degrees: float = 8.0
+@export var extra_projectiles: int = 0
 
 func try_attack(owner: Player, stats: Stats) -> bool:
 	var target: Enemy = _find_nearest_enemy(owner, stats)
@@ -42,7 +43,7 @@ func _fire_projectiles(owner: Player, stats: Stats, target_position: Vector2) ->
 	var parent: Node = owner.get_parent()
 	if muzzle == null or parent == null:
 		return
-	var projectile_count: int = maxi(1, roundi(stats.current_projectile_count))
+	var projectile_count: int = maxi(1, roundi(stats.current_projectile_count) + extra_projectiles)
 	var base_direction: Vector2 = muzzle.global_position.direction_to(target_position).normalized()
 	var spread_radians: float = deg_to_rad(spread_degrees)
 	var first_offset: float = -spread_radians * float(projectile_count - 1) * 0.5

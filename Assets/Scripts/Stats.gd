@@ -12,9 +12,22 @@ enum BuffableStats {
 	PHYSICAL_RESISTANCE,
 	ELECTRIC_RESISTANCE,
 	FIRE_RESISTANCE,
+	SHIELD,
 	PICKUP_RANGE,
 	PROJECTILE_COUNT,
-	WEAPON_RANGE
+	WEAPON_RANGE,
+	SHOTGUN_WEAPON,
+	SHOTGUN_EXTRA_PROJECTILE,
+	SHOTGUN_FIRE_RATE,
+	SHOTGUN_DAMAGE,
+	LASER_WEAPON,
+	LASER_EXTRA_BEAM,
+	LASER_PIERCING,
+	LASER_DAMAGE,
+	AXE_WEAPON,
+	AXE_COOLDOWN,
+	AXE_EXTRA_AXE,
+	AXE_DAMAGE
 }
 
 enum DamageType {
@@ -141,12 +154,20 @@ func recalculate_stats() -> void:
 	#aplica mejoras de nivel por multiplicador
 	for stat_name in stat_multipliers:
 		var cur_property_name: String = str("current_" + stat_name)
-		set(cur_property_name, get(cur_property_name) *stat_multipliers[stat_name])
+		var multiplier_current_value: Variant = get(cur_property_name)
+		if multiplier_current_value == null:
+			Global.debug_log("Stats ignoro buff sin propiedad actual: %s" % cur_property_name)
+			continue
+		set(cur_property_name, float(multiplier_current_value) * stat_multipliers[stat_name])
 	
 	#aplica mejoras de nivel por incremento
 	for stat_name in stat_addens:
 		var cur_property_name: String = str("current_" + stat_name)
-		set(cur_property_name, get(cur_property_name) + stat_addens[stat_name])
+		var add_current_value: Variant = get(cur_property_name)
+		if add_current_value == null:
+			Global.debug_log("Stats ignoro buff sin propiedad actual: %s" % cur_property_name)
+			continue
+		set(cur_property_name, float(add_current_value) + stat_addens[stat_name])
 
 func _on_health_set(new_value: float) -> void:
 	health = clampf(new_value,0,current_max_health)

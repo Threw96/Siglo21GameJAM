@@ -73,6 +73,10 @@ func _on_option_pressed(index: int) -> void:
 	queue_free()
 
 func _get_choice_text(choice: StatBuff) -> String:
+	if _is_weapon_choice(choice.stat):
+		return _get_weapon_choice_text(choice)
+	if choice.stat == Stats.BuffableStats.SHIELD:
+		return _get_shield_choice_text(choice)
 	var stat_name: String = String(Stats.BuffableStats.keys()[choice.stat]).capitalize().replace("_", " ")
 	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
 	var prefix: String = "[%s] " % rarity_name
@@ -99,3 +103,62 @@ func _format_number(value: float) -> String:
 	if is_equal_approx(value, roundf(value)):
 		return "%d" % roundi(value)
 	return "%.2f" % value
+
+func _is_weapon_choice(stat: Stats.BuffableStats) -> bool:
+	return [
+		Stats.BuffableStats.SHOTGUN_WEAPON,
+		Stats.BuffableStats.SHOTGUN_EXTRA_PROJECTILE,
+		Stats.BuffableStats.SHOTGUN_FIRE_RATE,
+		Stats.BuffableStats.SHOTGUN_DAMAGE,
+		Stats.BuffableStats.LASER_WEAPON,
+		Stats.BuffableStats.LASER_EXTRA_BEAM,
+		Stats.BuffableStats.LASER_PIERCING,
+		Stats.BuffableStats.LASER_DAMAGE,
+		Stats.BuffableStats.AXE_WEAPON,
+		Stats.BuffableStats.AXE_COOLDOWN,
+		Stats.BuffableStats.AXE_EXTRA_AXE,
+		Stats.BuffableStats.AXE_DAMAGE,
+	].has(stat)
+
+func _get_weapon_choice_text(choice: StatBuff) -> String:
+	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	match choice.stat:
+		Stats.BuffableStats.SHOTGUN_WEAPON:
+			return "[%s] Shotgun - Desbloquea escopeta" % rarity_name
+		Stats.BuffableStats.SHOTGUN_EXTRA_PROJECTILE:
+			return "[%s] Cartucho doble - +1 bala shotgun" % rarity_name
+		Stats.BuffableStats.SHOTGUN_FIRE_RATE:
+			return "[%s] Recarga rapida - +30%% cadencia shotgun" % rarity_name
+		Stats.BuffableStats.SHOTGUN_DAMAGE:
+			return "[%s] Municion pesada - +25%% dano shotgun" % rarity_name
+		Stats.BuffableStats.LASER_WEAPON:
+			return "[%s] Bobina laser - Desbloquea laser" % rarity_name
+		Stats.BuffableStats.LASER_EXTRA_BEAM:
+			return "[%s] Rayo gemelo - +1 laser" % rarity_name
+		Stats.BuffableStats.LASER_PIERCING:
+			return "[%s] Rayo perforante - Atraviesa enemigos" % rarity_name
+		Stats.BuffableStats.LASER_DAMAGE:
+			return "[%s] Bobina sobrecargada - +25%% dano laser" % rarity_name
+		Stats.BuffableStats.AXE_WEAPON:
+			return "[%s] Hacha orbital - Desbloquea hacha" % rarity_name
+		Stats.BuffableStats.AXE_COOLDOWN:
+			return "[%s] Engranaje liviano - Cooldown 0.8s" % rarity_name
+		Stats.BuffableStats.AXE_EXTRA_AXE:
+			return "[%s] Hacha gemela - +1 hacha" % rarity_name
+		Stats.BuffableStats.AXE_DAMAGE:
+			return "[%s] Filo reforzado - +25%% dano hacha" % rarity_name
+	return "[%s] %s" % [rarity_name, choice.display_name]
+
+func _get_shield_choice_text(choice: StatBuff) -> String:
+	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	var current_level: int = 0
+	if player != null:
+		current_level = player.get_upgrade_stack_count_for_ui(Stats.BuffableStats.SHIELD)
+	match current_level + 1:
+		1:
+			return "[%s] Escudo de emergencia - Bloquea 1 golpe cada 60s" % rarity_name
+		2:
+			return "[%s] Escudo calibrado - Cooldown 45s" % rarity_name
+		3:
+			return "[%s] Escudo acelerado - Cooldown 30s" % rarity_name
+	return "[%s] %s" % [rarity_name, choice.display_name]

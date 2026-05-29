@@ -58,6 +58,11 @@ Ideas futuras del GDD:
 - `enemigo1.gd`: IA especifica del enemigo BabyAllien, movimiento y ataque al jugador.
 - `Assets/Scripts/weapon.gd`: clase base de armas.
 - `Assets/Scripts/projectile_weapon.gd`: arma de proyectiles usada por el player.
+- `Assets/Scripts/shotgun_weapon.gd`: arma inicial del ingeniero, basada en proyectiles.
+- `Assets/Scripts/laser_weapon.gd`: arma laser desbloqueable por mejora epica.
+- `Assets/Scripts/laser_beam_effect.gd`: efecto visual de canalizacion y barrido del laser.
+- `Assets/Scripts/axe_weapon.gd`: arma orbital inicial del mecanico.
+- `Assets/Scripts/axe_orbit_effect.gd`: efecto visual y daño del hacha orbital.
 - `Assets/Scripts/bullet_example.gd`: proyectil que viaja recto y daña enemigos.
 - `Assets/Scripts/gema.gd`: gema recolectable que entrega experiencia.
 - `Assets/Scripts/spawn.gd`: spawner de enemigos.
@@ -256,11 +261,11 @@ Los inputs estan definidos en `project.godot`:
 
 La direccion se multiplica por `speed` y luego se llama `move_and_slide()`.
 
-### Disparo automatico
+### Sistema de armas
 
-La escena `Player.tscn` tiene un `Timer` llamado `Weapon/cd`. Cuando hace timeout llama a `_on_cd_timeout()`, que ejecuta `Shot()`.
+El `Player` puede tener hasta 2 armas activas y llama `weapon.tick(delta, self, stats)` en cada frame. Las armas iniciales por personaje son: ingeniero con `ShotgunWeapon`, mecanico con `AxeWeapon` y soldador con `LaserWeapon`.
 
-`Shot()`:
+La shotgun sigue esta logica interna:
 
 1. Toma los cuerpos dentro del `Area2D` del jugador.
 2. Filtra los que estan en grupo `"Enemy"`.
@@ -273,7 +278,17 @@ La escena `Player.tscn` tiene un `Timer` llamado `Weapon/cd`. Cuando hace timeou
 
 La bala se agrega al nivel y no al jugador para evitar que herede el movimiento del jugador. Si se agregara como hija del jugador, pareceria curvarse al moverse el player.
 
-El disparo actual esta separado en un sistema de armas: `Player` junta sus hijos que heredan de `Weapon` y llama `weapon.tick(delta, self, stats)`. El arma actual es `ProjectileWeapon`, que busca el enemigo mas cercano, instancia proyectiles y usa stats como daño, rango, fire rate y cantidad de proyectiles.
+`ShotgunWeapon` hereda de `ProjectileWeapon`: busca el enemigo mas cercano, instancia balas y puede mejorar bala extra, cadencia y daño.
+
+`LaserWeapon` dispara una recta desde A hacia B. Sus mejoras son:
+
+1. Rayo extra.
+2. Agrega piercing para dañar a todos los enemigos en la recta.
+3. Aumenta el daño del laser en 25%.
+
+Visualmente usa `LaserBeamEffect`: primero dibuja una canalizacion circular celeste en el punto A, luego muestra una linea hacia B y la hace desaparecer desde A hacia B.
+
+`AxeWeapon` crea un `AxeOrbitEffect` cada cierto cooldown. El hacha gira alrededor del jugador, golpea enemigos cercanos una vez por activacion y puede mejorar cooldown, hacha extra y daño.
 
 ### Recibir experiencia
 
@@ -898,16 +913,18 @@ Se puede mejorar con:
 - Mejoras de arma.
 - Mejoras de velocidad, cooldown, cantidad de proyectiles, rango, magnetismo de gemas.
 
-### 3.1. Preparar sistema de armas futuro
+### 3.1. Sistema de armas actual
 
-El GDD menciona armas steampunk como llave boomerang, rayos y variantes para ingeniero, mecanico o electricista. Para implementarlo sin romper el player, conviene separar el arma en una escena propia.
+El GDD menciona armas steampunk como llave boomerang, rayos y variantes para ingeniero, mecanico o electricista. El proyecto ya separa las armas en clases propias para que el `Player` no concentre toda la logica.
 
 Estructura recomendada:
 
-- `Weapon.gd`: clase base con cooldown, daño, rango y metodo `attack()`.
+- `Weapon.gd`: clase base con cooldown, daño, rango y metodo `try_attack()`.
 - `ProjectileWeapon.gd`: arma que instancia proyectiles.
+- `ShotgunWeapon.gd`: escopeta inicial del ingeniero.
+- `LaserWeapon.gd`: arma que dispara una recta, opcionalmente con piercing.
+- `AxeWeapon.gd`: hacha orbital inicial del mecanico.
 - `BoomerangWeapon.gd`: arma que lanza una llave que vuelve.
-- `LaserWeapon.gd`: arma de rayo continuo o disparo instantaneo.
 
 El `Player` deberia tener una lista de armas y llamar algo como:
 

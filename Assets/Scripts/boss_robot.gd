@@ -22,7 +22,7 @@ func _move() -> void:
 func _attack() -> void:
 	if $AttackTimer.time_left > 0:
 		return
-	Global.Player.TakeDamage(damage, damage_type)
+	Global.Player.TakeDamage(damage, damage_type, defense_penetration)
 	$AttackTimer.start()
 
 func _on_attack_area_body_entered(body: Node2D) -> void:

@@ -154,15 +154,18 @@ Flujo:
 4. Emite `damage_taken(raw_damage, final_damage)`.
 5. Devuelve el daño final aplicado.
 
-Actualmente la defensa reduce daño plano:
+Actualmente la defensa reduce daño con una curva porcentual suave:
 
 ```gdscript
-maxf(raw_damage - current_defense, 1.0)
+defense_reduction = defense / (defense + 300)
+final_damage = raw_damage * (1.0 - damage_reduction) * (1.0 - defense_reduction)
 ```
 
-Eso asegura que un golpe valido siempre haga al menos `1` de daño. Si mas adelante queres defensa porcentual, este es el lugar para cambiar la formula.
+Eso hace que la defensa ayude sin anular completamente golpes medianos. Por ejemplo, `34.7` de defensa reduce cerca de 10%, y `119` reduce cerca de 28%. La reduccion maxima por defensa queda limitada por `MAX_DEFENSE_REDUCTION`.
 
 El sistema actual tambien soporta reduccion porcentual global, resistencias por tipo de daño (`PHYSICAL`, `ELECTRIC`, `FIRE`), invulnerabilidad breve con `set_invulnerable()`, y señales de feedback como `damage_taken` y `damage_blocked`.
+
+`take_damage()` tambien acepta `defense_penetration`. Un valor de `0.75` hace que el golpe ignore el 75% de la defensa plana del objetivo. Esto se usa para jefes, asi la defensa alta no convierte sus ataques en daño minimo.
 
 ### Curvas de stats
 

@@ -6,7 +6,7 @@ class_name Player
 
 signal upgrade_choices_ready(choices: Array[StatBuff])
 
-const MAX_UPGRADE_STACKS_PER_STAT: int = 3
+const MAX_UPGRADE_STACKS_PER_STAT: int = 4
 const MAX_ACTIVE_UPGRADE_STATS: int = 4
 
 var pending_upgrade_choices: Array[StatBuff] = []
@@ -20,6 +20,7 @@ var bullet: PackedScene = preload("res://Scenes/bullet_example.tscn")
 var upgrade_menu_scene: PackedScene = preload("res://Scenes/UpgradeMenu.tscn")
 var pause_menu_scene: PackedScene = preload("res://Scenes/PauseMenu.tscn")
 var hud_scene: PackedScene = preload("res://Scenes/HUD.tscn")
+var character_texture: Texture2D = preload("res://personajes.png")
 var hud: Node
 var pause_menu: Node
 var weapons: Array[Weapon] = []
@@ -42,6 +43,7 @@ func _ready() -> void:
 		_update_health_bar(stats.health, stats.current_max_health)
 		_update_fire_rate()
 		_update_weapon_range()
+		_apply_selected_character_sprite()
 		_show_hud.call_deferred()
 	_collect_weapons()
 	Global.start_run()
@@ -255,6 +257,22 @@ func _tick_weapons(delta: float) -> void:
 		return
 	for weapon in weapons:
 		weapon.tick(delta, self, stats)
+
+func _apply_selected_character_sprite() -> void:
+	var sprite: Sprite2D = $OneHanded
+	if sprite == null:
+		return
+	var regions: Array[Rect2] = [
+		Rect2(0, 0, 360, 464),
+		Rect2(390, 0, 420, 464),
+		Rect2(850, 0, 413, 464),
+	]
+	var atlas_texture: AtlasTexture = AtlasTexture.new()
+	atlas_texture.atlas = character_texture
+	atlas_texture.region = regions[clampi(Global.selected_character_id, 0, regions.size() - 1)]
+	sprite.texture = atlas_texture
+	sprite.scale = Vector2(0.16, 0.16)
+	sprite.position = Vector2(0, -12)
 
 func cleanup_runtime_ui() -> void:
 	if hud != null and is_instance_valid(hud):

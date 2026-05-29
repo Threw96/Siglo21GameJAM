@@ -1,6 +1,6 @@
 extends Control
 
-@export_file("*.tscn") var game_scene_path: String = "res://Scenes/Nivel1/level_1.tscn"
+@export_file("*.tscn") var game_scene_path: String = "res://Scenes/CharacterSelectMenu.tscn"
 
 func _ready() -> void:
 	get_tree().paused = false

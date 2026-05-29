@@ -15,6 +15,7 @@ var health: float
 var current_phase: int = 0
 
 signal phase_changed(new_phase: int)
+signal died(enemy: Enemy)
 
 func _ready() -> void:
 	add_to_group("Enemy")
@@ -41,6 +42,7 @@ func TakeDamage(damage_amount: float, damage_type: Stats.DamageType = Stats.Dama
 func _die() -> void:
 	Global.register_enemy_kill()
 	_drop_gem()
+	died.emit(self)
 	queue_free()
 
 func _drop_gem() -> void:

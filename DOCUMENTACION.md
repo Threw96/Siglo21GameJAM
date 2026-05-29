@@ -54,6 +54,7 @@ Ideas futuras del GDD:
 - `Assets/Scripts/enemy.gd`: clase base para enemigos, vida, daño recibido, muerte y drop de gemas.
 - `Assets/Scripts/miniboss_enemy.gd`: clase base para minijefes con ataque especial.
 - `Assets/Scripts/boss_enemy.gd`: clase base para jefes con fases.
+- `Assets/Scripts/boss_robot.gd`: jefe robot lento, resistente y de mucho daño.
 - `enemigo1.gd`: IA especifica del enemigo BabyAllien, movimiento y ataque al jugador.
 - `Assets/Scripts/weapon.gd`: clase base de armas.
 - `Assets/Scripts/projectile_weapon.gd`: arma de proyectiles usada por el player.
@@ -69,11 +70,13 @@ Ideas futuras del GDD:
 - `Scenes/Nivel1/level_1.tscn`: escena principal del nivel.
 - `Scenes/Player.tscn`: escena del jugador.
 - `Scenes/enemigo1.tscn`: escena del enemigo `BabyAllien`.
+- `Scenes/BossRobot.tscn`: escena del jefe robot.
 - `Scenes/bullet_example.tscn`: escena del proyectil.
 - `Scenes/Gema.tscn`: escena de la gema de experiencia.
 - `Scenes/UpgradeMenu.tscn`: escena del menu de mejoras.
 - `Scenes/HUD.tscn`: escena de interfaz durante la partida.
 - `Scenes/Menu.tscn`: menu existente del proyecto.
+- `Scenes/CharacterSelectMenu.tscn`: seleccion de personaje antes de iniciar la partida.
 
 ### Recursos
 
@@ -690,6 +693,8 @@ Luego agrega el enemigo como hijo del spawner y le asigna posicion global.
 
 El spawner ahora escala con `Global.survived_time`: reduce el tiempo entre oleadas, aumenta cantidad de enemigos, escala vida/daño/experiencia y puede generar enemigos fuera de camara con `spawn_outside_camera`.
 
+Cada 5 minutos intenta spawnear un jefe desde `Scenes/BossRobot.tscn`. Mientras el jefe esta vivo, el spawner no crea enemigos normales. Cuando el jefe muere, se reanuda el spawn normal hasta el proximo bloque de 5 minutos.
+
 Para modificar spawn:
 
 - Cambiar `wait_time` del `Timer` en `level_1.tscn`.
@@ -723,7 +728,27 @@ Mejora recomendada: si el juego crece, evitar depender demasiado de `Global` y u
 
 Archivo: `Scenes/Menu.tscn`
 
-El proyecto arranca en el menu inicial. `Iniciar partida` carga `Scenes/Nivel1/level_1.tscn`; `Salir` cierra el juego. El script asociado es `Assets/Scripts/main_menu.gd`.
+El proyecto arranca en el menu inicial. `Iniciar partida` carga `Scenes/CharacterSelectMenu.tscn`; `Salir` cierra el juego. El script asociado es `Assets/Scripts/main_menu.gd`.
+
+## Seleccion de personaje
+
+Archivos:
+
+- `Scenes/CharacterSelectMenu.tscn`
+- `Assets/Scripts/character_select_menu.gd`
+- `personajes.png`
+
+Esta pantalla aparece entre el menu inicial y `Scenes/Nivel1/level_1.tscn`. Usa `personajes.png` como atlas y recorta los tres personajes con `AtlasTexture`.
+
+Al elegir un personaje:
+
+1. Guarda el indice en `Global.selected_character_id`.
+2. Guarda el nombre en `Global.selected_character_name`.
+3. Carga `Scenes/Nivel1/level_1.tscn`.
+
+La seleccion cambia el sprite visible del `Player`. `Player.gd` lee `Global.selected_character_id`, recorta `personajes.png` con `AtlasTexture` y reemplaza la textura del nodo `OneHanded`.
+
+Tambien queda preparada para futuras diferencias de stats o armas.
 
 ## Escena principal Level 1
 

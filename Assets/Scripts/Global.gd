@@ -7,6 +7,8 @@ var env_values: Dictionary[String, String] = {}
 var survived_time: float = 0.0
 var enemies_killed: int = 0
 var is_run_active: bool = false
+var selected_character_id: int = 0
+var selected_character_name: String = "Ingeniero"
 
 signal survived_time_changed(time_seconds: float)
 signal enemies_killed_changed(kill_count: int)

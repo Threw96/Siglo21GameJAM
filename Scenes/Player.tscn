@@ -4,13 +4,10 @@
 [ext_resource type="Texture2D" uid="uid://cqacq1kjny1h1" path="res://Assets/Images/one_handed.png" id="1_rpqav"]
 [ext_resource type="Resource" uid="uid://cvbkysd12sl6x" path="res://Assets/Resources/Player_stats.tres" id="2_dewec"]
 [ext_resource type="Texture2D" uid="uid://snwfuhtryh00" path="res://Assets/Images/double_barrel_shotgun_icon.png" id="3_gntrk"]
-[ext_resource type="Script" path="res://Assets/Scripts/projectile_weapon.gd" id="4_weapon"]
+[ext_resource type="Script" uid="uid://cpufkug7bn18u" path="res://Assets/Scripts/projectile_weapon.gd" id="4_weapon"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4i404"]
 size = Vector2(33, 43)
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_dewec"]
-radius = 256.32205
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_bg"]
 bg_color = Color(0.08, 0.04, 0.04, 0.85)
@@ -25,6 +22,9 @@ corner_radius_top_left = 2
 corner_radius_top_right = 2
 corner_radius_bottom_right = 2
 corner_radius_bottom_left = 2
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_dewec"]
+radius = 256.32205
 
 [node name="Player" type="CharacterBody2D" unique_id=259061177 groups=["Player"]]
 collision_layer = 4

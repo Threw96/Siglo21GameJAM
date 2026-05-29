@@ -80,6 +80,8 @@ func _get_upgrade_label(stat: Stats.BuffableStats) -> String:
 			return "RNG"
 		Stats.BuffableStats.DAMAGE_REDUCTION:
 			return "ARM"
+		Stats.BuffableStats.SHIELD:
+			return "SHD"
 		Stats.BuffableStats.PHYSICAL_RESISTANCE:
 			return "PHY"
 		Stats.BuffableStats.ELECTRIC_RESISTANCE:
@@ -88,6 +90,12 @@ func _get_upgrade_label(stat: Stats.BuffableStats) -> String:
 			return "FIR"
 		Stats.BuffableStats.PROJECTILE_COUNT:
 			return "PRJ"
+		Stats.BuffableStats.LASER_WEAPON:
+			return "LAS"
+		Stats.BuffableStats.AXE_WEAPON:
+			return "AXE"
+		Stats.BuffableStats.SHOTGUN_WEAPON:
+			return "SG"
 	return "UP"
 
 func _format_number(value: float) -> String:

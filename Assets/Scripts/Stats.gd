@@ -30,6 +30,8 @@ const STAT_CURVES: Dictionary[BuffableStats, Curve] = {
 }
 
 const BASE_LEVEL_EXP: float = 100.0
+const DEFENSE_REDUCTION_SCALE: float = 300.0
+const MAX_DEFENSE_REDUCTION: float = 0.65
 
 signal health_depleted
 signal health_changed(cur_health: float , max_health:float)
@@ -152,21 +154,27 @@ func _on_health_set(new_value: float) -> void:
 	if health <= 0:
 		health_depleted.emit()
 
-func take_damage(raw_damage: float, damage_type: DamageType = DamageType.PHYSICAL) -> float:
+func take_damage(raw_damage: float, damage_type: DamageType = DamageType.PHYSICAL, defense_penetration: float = 0.0) -> float:
 	if is_invulnerable:
 		damage_blocked.emit(raw_damage, damage_type)
 		return 0.0
-	var final_damage: float = get_damage_after_defense(raw_damage, damage_type)
+	var final_damage: float = get_damage_after_defense(raw_damage, damage_type, defense_penetration)
 	health -= final_damage
 	damage_taken.emit(raw_damage, final_damage, damage_type)
 	return final_damage
 
-func get_damage_after_defense(raw_damage: float, damage_type: DamageType = DamageType.PHYSICAL) -> float:
+func get_damage_after_defense(raw_damage: float, damage_type: DamageType = DamageType.PHYSICAL, defense_penetration: float = 0.0) -> float:
 	if raw_damage <= 0.0:
 		return 0.0
 	var percent_reduction: float = clampf(current_damage_reduction + _get_resistance_for_damage_type(damage_type), 0.0, 0.95)
-	var reduced_damage: float = raw_damage * (1.0 - percent_reduction)
-	return maxf(reduced_damage - current_defense, 1.0)
+	var effective_defense: float = current_defense * (1.0 - clampf(defense_penetration, 0.0, 1.0))
+	var defense_reduction: float = _get_defense_reduction(effective_defense)
+	return maxf(raw_damage * (1.0 - percent_reduction) * (1.0 - defense_reduction), 1.0)
+
+func _get_defense_reduction(defense: float) -> float:
+	if defense <= 0.0:
+		return 0.0
+	return clampf(defense / (defense + DEFENSE_REDUCTION_SCALE), 0.0, MAX_DEFENSE_REDUCTION)
 
 func set_invulnerable(value: bool) -> void:
 	is_invulnerable = value

@@ -193,13 +193,13 @@ func _get_upgrade_choice_names(choices: Array[StatBuff]) -> Array[String]:
 		names.append("%s %s %.2f" % [stat_name, type_name, choice.buff_amount])
 	return names
 
-func TakeDamage(damage: int, damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL) -> void:
+func TakeDamage(damage: int, damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL, defense_penetration: float = 0.0) -> void:
 	if stats == null:
 		return
-	var final_damage: float = stats.take_damage(float(damage), damage_type)
+	var final_damage: float = stats.take_damage(float(damage), damage_type, defense_penetration)
 	if final_damage > 0.0:
 		$CPUParticles2D.restart()
-		#_start_invulnerability()
+		_start_invulnerability()
 	Global.debug_log("Player recibio %s de dano (%s bruto). Vida: %s / %s" % [final_damage, damage, stats.health, stats.current_max_health])
 	
 	if stats.health <= 0: Die()

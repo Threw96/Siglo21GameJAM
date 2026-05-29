@@ -8,11 +8,13 @@ class_name Enemy
 @export_range(0.0, 1.0, 0.01) var drop_gem_chance: float = 1.0
 @export var damage: int = 1
 @export var damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL
+@export_range(0.0, 1.0, 0.01) var defense_penetration: float = 0.0
 @export var stats: Stats
 @export var phase_health_ratios: Array[float] = []
 
 var health: float
 var current_phase: int = 0
+var is_dead: bool = false
 
 signal phase_changed(new_phase: int)
 signal died(enemy: Enemy)
@@ -29,6 +31,8 @@ func _ready() -> void:
 		health = max_health
 
 func TakeDamage(damage_amount: float, damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL) -> void:
+	if is_dead:
+		return
 	if stats != null:
 		stats.take_damage(damage_amount, damage_type)
 		health = stats.health
@@ -40,6 +44,9 @@ func TakeDamage(damage_amount: float, damage_type: Stats.DamageType = Stats.Dama
 		_die()
 
 func _die() -> void:
+	if is_dead:
+		return
+	is_dead = true
 	Global.register_enemy_kill()
 	_drop_gem()
 	died.emit(self)
@@ -56,8 +63,8 @@ func _drop_gem() -> void:
 	var parent: Node = get_parent()
 	if parent == null:
 		return
-	parent.add_child(gem)
 	gem.global_position = global_position
+	parent.call_deferred("add_child", gem)
 
 func _get_max_health() -> float:
 	if stats != null:

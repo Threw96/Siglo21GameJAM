@@ -21,7 +21,8 @@ script = ExtResource("1_boss")
 speed = 70.0
 max_health = 9000.0
 experience_value = 350.0
-damage = 50
+damage = 100
+defense_penetration = 0.75
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1564342201]
 scale = Vector2(0.23, 0.23)

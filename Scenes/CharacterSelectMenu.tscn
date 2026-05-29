@@ -1,0 +1,177 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Assets/Scripts/character_select_menu.gd" id="1_select"]
+[ext_resource type="Texture2D" uid="uid://dpbhp3egb4e4t" path="res://personajes.png" id="2_chars"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.035, 0.032, 0.03, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.08, 0.075, 0.065, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.74, 0.55, 0.22, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.12, 0.11, 0.09, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.84, 0.63, 0.28, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_engineer"]
+atlas = ExtResource("2_chars")
+region = Rect2(0, 0, 360, 464)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mechanic"]
+atlas = ExtResource("2_chars")
+region = Rect2(390, 0, 420, 464)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_welder"]
+atlas = ExtResource("2_chars")
+region = Rect2(850, 0, 413, 464)
+
+[node name="CharacterSelectMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_select")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Elegir personaje"
+horizontal_alignment = 1
+
+[node name="CharacterRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="EngineerCard" type="PanelContainer" parent="CenterContainer/VBoxContainer/CharacterRow"]
+custom_minimum_size = Vector2(280, 410)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="CardContent" type="VBoxContainer" parent="CenterContainer/VBoxContainer/CharacterRow/EngineerCard"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Portrait" type="TextureRect" parent="CenterContainer/VBoxContainer/CharacterRow/EngineerCard/CardContent"]
+custom_minimum_size = Vector2(260, 300)
+layout_mode = 2
+texture = SubResource("AtlasTexture_engineer")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="CenterContainer/VBoxContainer/CharacterRow/EngineerCard/CardContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Ingeniero"
+horizontal_alignment = 1
+
+[node name="ChooseButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterRow/EngineerCard/CardContent"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Elegir"
+
+[node name="MechanicCard" type="PanelContainer" parent="CenterContainer/VBoxContainer/CharacterRow"]
+custom_minimum_size = Vector2(280, 410)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="CardContent" type="VBoxContainer" parent="CenterContainer/VBoxContainer/CharacterRow/MechanicCard"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Portrait" type="TextureRect" parent="CenterContainer/VBoxContainer/CharacterRow/MechanicCard/CardContent"]
+custom_minimum_size = Vector2(260, 300)
+layout_mode = 2
+texture = SubResource("AtlasTexture_mechanic")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="CenterContainer/VBoxContainer/CharacterRow/MechanicCard/CardContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Mecanico"
+horizontal_alignment = 1
+
+[node name="ChooseButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterRow/MechanicCard/CardContent"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Elegir"
+
+[node name="WelderCard" type="PanelContainer" parent="CenterContainer/VBoxContainer/CharacterRow"]
+custom_minimum_size = Vector2(280, 410)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="CardContent" type="VBoxContainer" parent="CenterContainer/VBoxContainer/CharacterRow/WelderCard"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Portrait" type="TextureRect" parent="CenterContainer/VBoxContainer/CharacterRow/WelderCard/CardContent"]
+custom_minimum_size = Vector2(260, 300)
+layout_mode = 2
+texture = SubResource("AtlasTexture_welder")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="CenterContainer/VBoxContainer/CharacterRow/WelderCard/CardContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Soldador"
+horizontal_alignment = 1
+
+[node name="ChooseButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterRow/WelderCard/CardContent"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Elegir"
+
+[node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(280, 48)
+layout_mode = 2
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Volver"

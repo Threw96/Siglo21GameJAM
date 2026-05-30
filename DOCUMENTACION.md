@@ -4,15 +4,15 @@ Este documento explica como funciona el codigo actual del juego, como se conecta
 
 ## Resumen general
 
-El proyecto es un juego 2D en Godot donde el jugador se mueve, dispara automaticamente al enemigo mas cercano, recibe daño si un enemigo se acerca, mata enemigos, recoge gemas de experiencia y sube de nivel. Al subir de nivel, el juego se pausa y aparece un menu con 3 mejoras seleccionables.
+El proyecto es un juego 2D en Godot donde el jugador se mueve, ataca automaticamente con hasta 2 armas, recibe daño si un enemigo se acerca, mata enemigos, recoge gemas de experiencia y sube de nivel. Al subir de nivel, el juego se pausa y aparece un menu con 3 mejoras seleccionables.
 
 El ciclo principal es:
 
 1. El nivel instancia al `Player`, enemigos iniciales y un `spawn`.
 2. El `spawn` crea enemigos cada cierto tiempo.
 3. El `Player` detecta enemigos cercanos con un `Area2D`.
-4. Cada cierto tiempo, el `Player` dispara una bala al enemigo mas cercano.
-5. La bala viaja en linea recta y aplica el daño actual del jugador.
+4. Cada arma del `Player` ataca cuando termina su cooldown.
+5. Los proyectiles y lasers priorizan enemigos cercanos; si no hay objetivo, disparan en direcciones libres para obligar al jugador a moverse y posicionarse.
 6. Cuando el enemigo muere, suelta una gema.
 7. Si el jugador pasa por encima de la gema, recibe experiencia.
 8. Al subir de nivel, `Stats` cura al jugador al maximo y emite una señal.
@@ -43,6 +43,329 @@ Ideas futuras del GDD:
 - Jefe final al terminar el tiempo.
 - Enemigos/minijefes con ataques especiales.
 - Armas steampunk como llave boomerang, rayos o variantes por personaje.
+
+## Estado actual de sistemas implementados
+
+Esta seccion resume el rediseño mas reciente para tener una foto rapida del juego actual y de donde balancear cada mecanica.
+
+### Flujo de pantallas
+
+El flujo actual es:
+
+```text
+Menu principal -> Seleccion de personaje -> Level 1 -> Partida -> Menu de muerte
+```
+
+- `Scenes/Menu.tscn`: muestra iniciar partida y salir.
+- `Scenes/CharacterSelectMenu.tscn`: permite elegir entre los 3 personajes del atlas `personajes.png`.
+- `Scenes/Nivel1/level_1.tscn`: inicia la partida.
+- `Scenes/DeathMenu.tscn`: aparece al morir con el texto `LA MUERTE HA ENCONTRADO` y permite volver al menu.
+
+El menu principal, seleccion de personaje y menu de mejoras usan decoracion steampunk de pergamino y engranajes mediante `Assets/Scripts/gear_decoration.gd`.
+
+### Personajes y armas iniciales
+
+El personaje elegido se guarda en `Global.selected_character_id` y cambia el sprite del `Player` recortando `personajes.png`.
+
+Armas iniciales por personaje:
+
+- Ingeniero, indice `0`: empieza con `ShotgunWeapon`.
+- Mecanico, indice `1`: empieza con `AxeWeapon`.
+- Soldador, indice `2`: empieza con `LaserWeapon`.
+
+El jugador puede tener hasta `MAX_WEAPON_SLOTS = 2` armas activas.
+
+### Sistema de armas actual
+
+Todas las armas heredan de `Weapon.gd`. El player llama cada frame:
+
+```gdscript
+weapon.tick(delta, self, stats)
+```
+
+`Weapon.tick()` baja el cooldown y, si llega a cero, llama `try_attack()`.
+
+Formula general de cooldown:
+
+```gdscript
+if use_player_fire_rate:
+	cooldown = 1.0 / (stats.current_fire_rate * fire_rate_multiplier)
+else:
+	cooldown = cooldown_seconds
+```
+
+#### Shotgun
+
+Archivo: `Assets/Scripts/shotgun_weapon.gd`
+
+Hereda de `ProjectileWeapon`. Dispara proyectiles rectos y prioriza al enemigo mas cercano dentro del rango. Si no hay enemigos cerca, dispara en direccion de movimiento; si el player esta quieto, usa una direccion rotativa para que no quede inactiva.
+
+Variables para balancear:
+
+- `cooldown_seconds = 1.0`: cooldown base.
+- Mejora `SHOTGUN_FIRE_RATE`: baja cooldown a `0.7`.
+- `spread_degrees`: apertura entre proyectiles.
+- `extra_projectiles`: balas extra.
+- `damage_multiplier`: multiplica el daño final del arma.
+
+Formula de daño:
+
+```gdscript
+damage = stats.current_attack * damage_multiplier
+```
+
+Mejoras secuenciales:
+
+1. `SHOTGUN_EXTRA_PROJECTILE`: +1 bala.
+2. `SHOTGUN_FIRE_RATE`: cooldown 0.7s.
+3. `SHOTGUN_DAMAGE`: +25% daño de shotgun.
+
+#### Laser
+
+Archivo: `Assets/Scripts/laser_weapon.gd`
+
+Dispara una recta desde la boca del arma hasta el rango maximo. Igual que la shotgun, prioriza al enemigo mas cercano si existe. Si no hay enemigos cerca, dispara en una direccion libre: perpendicular al movimiento o rotativa si el player esta quieto.
+
+Variables para balancear:
+
+- `cooldown_seconds = 1.0`: cooldown base.
+- `beam_count`: cantidad de rayos.
+- `beam_width`: ancho de deteccion del rayo.
+- `base_damage_multiplier = 0.85`: daño base relativo al ataque del player.
+- `range_multiplier`: multiplica `stats.current_weapon_range`.
+- `piercing`: si esta activo, daña a todos los enemigos sobre la recta.
+
+Formula de daño:
+
+```gdscript
+damage = stats.current_attack * base_damage_multiplier * damage_multiplier
+```
+
+Mejoras secuenciales:
+
+1. `LASER_EXTRA_BEAM`: dispara 2 rayos.
+2. `LASER_PIERCING`: atraviesa enemigos.
+3. `LASER_DAMAGE`: +25% daño de laser.
+
+Visualmente usa `LaserBeamEffect`: dibuja una canalizacion circular celeste en el punto A y una linea hacia B que se desvanece desde A hacia B.
+
+#### Hacha orbital
+
+Archivo: `Assets/Scripts/axe_weapon.gd`
+
+Cada activacion crea un `AxeOrbitEffect` que gira alrededor del player, golpea enemigos dentro del radio y cada enemigo solo recibe daño una vez por activacion.
+
+Variables para balancear:
+
+- `cooldown_seconds = 2.6`: cooldown base actual.
+- Mejora `AXE_COOLDOWN`: baja cooldown a `1.2`.
+- `radius = 112.0`: radio de giro. El diametro real visual es `radius * 2`.
+- `effect_duration = 0.75`: tiempo durante el cual el hacha gira y puede golpear.
+- `axe_count`: cantidad de hachas simultaneas.
+- `base_damage_multiplier = 0.9`: daño base relativo al ataque del player.
+- `damage_multiplier`: multiplicador por mejoras.
+
+Formula de daño:
+
+```gdscript
+damage = stats.current_attack * base_damage_multiplier * damage_multiplier
+```
+
+Mejoras secuenciales:
+
+1. `AXE_COOLDOWN`: cooldown 1.2s.
+2. `AXE_EXTRA_AXE`: +1 hacha.
+3. `AXE_DAMAGE`: +25% daño de hacha.
+
+Para alejar o acercar el hacha del player, modificar `radius` en `AxeWeapon`. Si se instancia por codigo, el valor default vive en `Assets/Scripts/axe_weapon.gd`.
+
+### Sistema de mejoras actual
+
+El menu de nivel ofrece 3 opciones aleatorias. La lista puede incluir:
+
+- Mejoras de personaje.
+- Desbloqueos de arma.
+- Mejoras del arma que ya se tiene.
+
+Reglas importantes:
+
+- Maximo `MAX_ACTIVE_UPGRADE_STATS = 4` tipos de mejoras de personaje por partida.
+- Cada mejora de personaje puede elegirse hasta `MAX_UPGRADE_STACKS_PER_STAT = 3` veces.
+- Las armas no consumen esos 4 espacios de mejoras de personaje.
+- Las mejoras de arma son secuenciales por arma.
+- El jugador puede tener hasta 2 armas activas.
+
+Mejoras de personaje actuales:
+
+- `MAX_HEALTH`: vida maxima plana y cura al maximo despues de aplicarse.
+- `MOVE_SPEED`: velocidad de movimiento porcentual.
+- `PICKUP_RANGE`: rango magnetico de gemas.
+- `DAMAGE_REDUCTION`: reduccion porcentual global de daño.
+- `SHIELD`: bloquea 1 golpe y entra en cooldown.
+- `HEALTH_REGEN`: regeneracion de vida por segundo.
+
+La mejora de regeneracion se aplica cada frame:
+
+```gdscript
+stats.health += stats.current_health_regen * delta
+```
+
+El escudo usa estos cooldowns:
+
+```text
+nivel 1: 60s
+nivel 2: 45s
+nivel 3: 30s
+```
+
+### Caps de balance actuales
+
+Archivo: `Assets/Scripts/Stats.gd`
+
+Constantes:
+
+```gdscript
+MAX_NATURAL_HEALTH = 150.0
+MAX_DEFENSE = 100.0
+MAX_ATTACK_WITHOUT_UPGRADE = 200.0
+```
+
+Reglas:
+
+- La vida maxima natural por nivel no pasa de `150`.
+- La mejora `MAX_HEALTH` puede superar ese limite.
+- La defensa actual no puede superar `100`.
+- El ataque natural no puede superar `200`.
+- Una mejora global de `ATTACK`, si se vuelve a agregar al pool, permite superar el cap de `200`.
+- Las mejoras de daño de armas multiplican el daño despues de `current_attack`, asi que pueden hacer que el daño real de un arma supere 200.
+
+### Formula de experiencia
+
+Archivo: `Assets/Scripts/Stats.gd`
+
+Nivel actual:
+
+```gdscript
+level = floor(max(1.0, sqrt(experience / BASE_LEVEL_EXP) + 0.5))
+```
+
+Experiencia total requerida para un nivel:
+
+```gdscript
+normalized_level = max(target_level, 1) - 0.5
+required_exp = normalized_level * normalized_level * BASE_LEVEL_EXP
+```
+
+Con `BASE_LEVEL_EXP = 100`, cada nivel pide mas experiencia que el anterior.
+
+### Formula de daño recibido
+
+Archivo: `Assets/Scripts/Stats.gd`
+
+El daño final se calcula asi:
+
+```gdscript
+percent_reduction = clamp(current_damage_reduction + resistance_by_type, 0.0, 0.95)
+effective_defense = current_defense * (1.0 - defense_penetration)
+defense_reduction = effective_defense / (effective_defense + DEFENSE_REDUCTION_SCALE)
+defense_reduction = clamp(defense_reduction, 0.0, MAX_DEFENSE_REDUCTION)
+final_damage = raw_damage * (1.0 - percent_reduction) * (1.0 - defense_reduction)
+final_damage = max(final_damage, 1.0)
+```
+
+Valores actuales:
+
+```gdscript
+DEFENSE_REDUCTION_SCALE = 300.0
+MAX_DEFENSE_REDUCTION = 0.65
+```
+
+Para que la defensa reduzca menos daño, subir `DEFENSE_REDUCTION_SCALE`.
+Para que la defensa reduzca mas daño, bajar `DEFENSE_REDUCTION_SCALE`.
+Para limitar el techo de reduccion por defensa, modificar `MAX_DEFENSE_REDUCTION`.
+
+### Spawner y dificultad
+
+Archivo: `Assets/Scripts/spawn.gd`
+
+Variables principales:
+
+- `base_wait_time = 1.2`: tiempo inicial entre oleadas.
+- `min_wait_time = 0.2`: tiempo minimo entre oleadas.
+- `wait_time_decrease_per_minute = 0.25`: cuanto baja el timer por minuto.
+- `extra_enemy_per_minute = 1`: enemigos extra por minuto.
+- `enemy_health_growth_per_minute = 0.25`: crecimiento de vida enemigo por minuto.
+- `enemy_damage_growth_per_minute = 0.15`: crecimiento de daño enemigo por minuto.
+- `spawn_outside_camera = true`: spawnea fuera de camara.
+- `boss_spawn_interval_seconds = 300.0`: jefe cada 5 minutos.
+
+Formulas:
+
+```gdscript
+minutes = Global.survived_time / 60.0
+amount = 1 + floor(minutes * extra_enemy_per_minute)
+enemy.max_health *= 1.0 + minutes * enemy_health_growth_per_minute
+enemy.damage *= 1.0 + minutes * enemy_damage_growth_per_minute
+enemy.experience_value *= 1.0 + minutes * 0.1
+timer.wait_time = max(min_wait_time, base_wait_time - minutes * wait_time_decrease_per_minute)
+```
+
+Para que haya menos enemigos:
+
+- Subir `base_wait_time`.
+- Subir `min_wait_time`.
+- Bajar `wait_time_decrease_per_minute`.
+- Bajar `extra_enemy_per_minute`.
+
+Para que los enemigos escalen mas lento:
+
+- Bajar `enemy_health_growth_per_minute`.
+- Bajar `enemy_damage_growth_per_minute`.
+
+### BossRobot
+
+Archivo de escena: `Scenes/BossRobot.tscn`
+
+El boss aparece cada `boss_spawn_interval_seconds` segundos. Mientras esta vivo, el spawner deja de crear enemigos normales. Cuando muere, el spawner calcula el proximo bloque de boss y reanuda la oleada normal.
+
+Stats actuales del boss:
+
+- `speed = 70.0`
+- `max_health = 2000.0`
+- `experience_value = 350.0`
+- `damage = 100`
+- `defense_penetration = 0.75`
+- `AttackTimer.wait_time = 1.2`
+
+Para hacerlo mas amenazante:
+
+- Subir `damage`.
+- Subir `defense_penetration`.
+- Bajar `AttackTimer.wait_time`.
+- Subir `speed` con cuidado, porque la fantasia actual es que sea lento pero peligroso.
+
+El sprite del boss ahora usa `Assets/Images/enemies/boss_robot_copper.png`, una version recortada del atlas original con fondo transparente y linea color cobre oxidado.
+
+### HUD, pausa y debug
+
+HUD:
+
+- Barra de experiencia superior.
+- Nivel arriba a la izquierda.
+- Barra de vida debajo del player.
+- Tiempo sobrevivido.
+- Contador de enemigos derrotados.
+
+Pausa:
+
+- `Escape` o `Enter` abre un panel lateral.
+- Muestra stats actuales y hasta 4 mejoras de personaje con nivel `actual/3`.
+
+Debug:
+
+- Se activa con `.env` o variable de entorno `SIGLO21_DEBUG=1`.
+- Muestra numeros exactos de experiencia.
+- Habilita logs mediante `Global.debug_log()`.
 
 ## Estructura importante
 
@@ -308,20 +631,23 @@ Cuando `Stats` emite `leveled_up`, el player ejecuta `_on_stats_leveled_up()`.
 
 Flujo:
 
-1. Crea 3 mejoras con `_build_upgrade_choices(new_level)`.
-2. Guarda las mejoras en `pending_upgrade_choices`.
-3. Emite `upgrade_choices_ready`.
-4. Instancia el menu con `_show_upgrade_menu(new_level)`.
+1. Encola cada nivel ganado en `pending_upgrade_levels`.
+2. Crea hasta 3 opciones con `_build_upgrade_choices(new_level)`.
+3. Guarda las opciones en `pending_upgrade_choices`.
+4. Emite `upgrade_choices_ready`.
+5. Instancia `Scenes/UpgradeMenu.tscn`.
+6. Mantiene el juego pausado hasta elegir.
 
-Mejoras actuales:
+Mejoras actuales de personaje:
 
 - Vida maxima plana.
-- Ataque porcentual.
-- Defensa plana.
 - Velocidad de movimiento porcentual.
-- Velocidad de disparo porcentual.
+- Rango magnetico de gemas.
+- Reduccion porcentual de daño.
+- Escudo de emergencia.
+- Regeneracion de vida por segundo.
 
-Para modificar estas mejoras, editar `_build_upgrade_choices()`.
+Tambien pueden aparecer desbloqueos de arma y mejoras del arma ya equipada. Para modificar el pool de personaje, editar `_build_character_upgrade_pool()`. Para armas, editar `_build_weapon_unlock_pool()` y `_get_next_weapon_upgrade()`.
 
 Actualmente se conserva el pool completo de mejoras y se eligen 3 opciones al azar con `shuffle()`. Esto evita que las opciones sean siempre las mismas.
 
@@ -334,8 +660,12 @@ Si el jugador sube varios niveles de golpe, las pantallas de mejora se encolan: 
 `choose_upgrade(choice_index)`:
 
 1. Valida que el indice exista.
-2. Aplica el buff con `stats.add_buff()`.
-3. Limpia `pending_upgrade_choices`.
+2. Registra el stack elegido en `upgrade_counts_by_stat`.
+3. Si es desbloqueo o mejora de arma, llama `_apply_weapon_upgrade()`.
+4. Si es escudo, llama `_apply_shield_upgrade()`.
+5. Si es stat normal, aplica el buff con `stats.add_buff()`.
+6. Limpia `pending_upgrade_choices`.
+7. Si habia otros niveles pendientes, abre el siguiente menu.
 
 El menu llama esta funcion cuando el jugador elige una opcion.
 
@@ -715,10 +1045,13 @@ Cada 5 minutos intenta spawnear un jefe desde `Scenes/BossRobot.tscn`. Mientras 
 
 Para modificar spawn:
 
-- Cambiar `wait_time` del `Timer` en `level_1.tscn`.
+- Cambiar `base_wait_time`, `min_wait_time` y `wait_time_decrease_per_minute` en `spawn.gd`.
+- Cambiar `extra_enemy_per_minute` para controlar cantidad por oleada.
+- Cambiar `enemy_health_growth_per_minute` y `enemy_damage_growth_per_minute` para controlar escalado.
+- Cambiar `boss_spawn_interval_seconds` para controlar cada cuanto aparece el boss.
 - Cambiar las posiciones de los markers.
 - Cambiar `enemigo` por otra escena.
-- Agregar logica para aumentar dificultad con el tiempo.
+- Activar o desactivar `spawn_outside_camera`.
 
 ## Global singleton
 
@@ -830,15 +1163,19 @@ Importante: si el nivel sobreescribe el recurso, ese valor gana sobre el `.tres`
 
 Editar `base_attack` en el recurso `Stats` usado por el player.
 
-El daño aplicado a enemigos sale de:
+El ataque natural tiene cap de `200` en `Stats.gd`. Las mejoras de arma multiplican despues de ese valor. Si se agrega una mejora global `ATTACK`, esa mejora permite superar el cap.
+
+El daño aplicado por cada arma sale de:
 
 ```gdscript
-stats.current_attack
+shotgun = stats.current_attack * damage_multiplier
+laser = stats.current_attack * base_damage_multiplier * damage_multiplier
+axe = stats.current_attack * base_damage_multiplier * damage_multiplier
 ```
 
 ### Cambiar velocidad del jugador
 
-Editar `speed` en `Scenes/Player.tscn` o en la instancia del player dentro del nivel.
+Editar `base_move_speed` en el recurso `Stats` usado por el player. La variable `speed` queda como fallback si no hay recurso `Stats`.
 
 ### Cambiar daño del enemigo
 
@@ -854,11 +1191,21 @@ Editar `experience_value` en `Scenes/enemigo1.tscn`.
 
 ### Cambiar frecuencia de disparo
 
-Editar `wait_time` del timer `Weapon/cd` en `Scenes/Player.tscn`.
+Editar el arma concreta:
+
+- Shotgun: `cooldown_seconds` en `shotgun_weapon.gd`.
+- Laser: `cooldown_seconds` en `laser_weapon.gd`.
+- Hacha: `cooldown_seconds` en `axe_weapon.gd`.
+
+Si un arma tiene `use_player_fire_rate = true`, usa:
+
+```gdscript
+1.0 / (stats.current_fire_rate * fire_rate_multiplier)
+```
 
 ### Cambiar rango de disparo
 
-Editar el radio del `CollisionShape2D` dentro de `Player/Area2D`.
+Editar `base_weapon_range` en `Stats` para cambiar el rango global. `Player.gd` copia ese valor al `CollisionShape2D` de deteccion. Tambien se puede tocar `range_multiplier` en cada arma para ajustar un arma especifica.
 
 ### Cambiar velocidad de bala
 
@@ -866,7 +1213,11 @@ Editar `speedBullet` en `Scenes/bullet_example.tscn` o en `bullet_example.gd`.
 
 ### Cambiar mejoras de nivel
 
-Editar `_build_upgrade_choices()` en `Assets/Scripts/player.gd`.
+Editar estas funciones en `Assets/Scripts/player.gd`:
+
+- `_build_character_upgrade_pool()`: mejoras de personaje.
+- `_build_weapon_unlock_pool()`: armas que pueden aparecer.
+- `_get_next_weapon_upgrade()`: mejoras secuenciales de cada arma.
 
 Ejemplo para agregar mas ataque:
 

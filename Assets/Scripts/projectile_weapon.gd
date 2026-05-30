@@ -7,13 +7,16 @@ class_name ProjectileWeapon
 @export var visual_path: NodePath = NodePath("DoubleBarrelShotgunIcon")
 @export var spread_degrees: float = 8.0
 @export var extra_projectiles: int = 0
+@export var idle_rotation_step_degrees: float = 47.0
+
+var shot_sequence: int = 0
 
 func try_attack(owner: Player, stats: Stats) -> bool:
 	var target: Enemy = _find_nearest_enemy(owner, stats)
-	if target == null:
-		return false
-	_aim_at(target.global_position)
-	_fire_projectiles(owner, stats, target.global_position)
+	var base_direction: Vector2 = _get_base_direction(owner, target)
+	_aim_in_direction(base_direction)
+	_fire_projectiles(owner, stats, base_direction)
+	shot_sequence += 1
 	return true
 
 func _find_nearest_enemy(owner: Player, stats: Stats) -> Enemy:
@@ -38,13 +41,24 @@ func _aim_at(target_position: Vector2) -> void:
 	if visual != null:
 		visual.look_at(target_position)
 
-func _fire_projectiles(owner: Player, stats: Stats, target_position: Vector2) -> void:
+func _aim_in_direction(direction: Vector2) -> void:
+	var visual: Node2D = get_node_or_null(visual_path) as Node2D
+	if visual != null:
+		visual.rotation = direction.angle()
+
+func _get_base_direction(owner: Player, target: Enemy) -> Vector2:
+	if target != null:
+		return owner.global_position.direction_to(target.global_position).normalized()
+	if owner.velocity.length_squared() > 0.01:
+		return owner.velocity.normalized()
+	return Vector2.RIGHT.rotated(deg_to_rad(idle_rotation_step_degrees * float(shot_sequence)))
+
+func _fire_projectiles(owner: Player, stats: Stats, base_direction: Vector2) -> void:
 	var muzzle: Node2D = get_node_or_null(muzzle_path) as Node2D
 	var parent: Node = owner.get_parent()
 	if muzzle == null or parent == null:
 		return
 	var projectile_count: int = maxi(1, roundi(stats.current_projectile_count) + extra_projectiles)
-	var base_direction: Vector2 = muzzle.global_position.direction_to(target_position).normalized()
 	var spread_radians: float = deg_to_rad(spread_degrees)
 	var first_offset: float = -spread_radians * float(projectile_count - 1) * 0.5
 	for index in range(projectile_count):

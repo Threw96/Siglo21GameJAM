@@ -77,6 +77,8 @@ func _get_choice_text(choice: StatBuff) -> String:
 		return _get_weapon_choice_text(choice)
 	if choice.stat == Stats.BuffableStats.SHIELD:
 		return _get_shield_choice_text(choice)
+	if choice.stat == Stats.BuffableStats.HEALTH_REGEN:
+		return _get_health_regen_choice_text(choice)
 	var stat_name: String = String(Stats.BuffableStats.keys()[choice.stat]).capitalize().replace("_", " ")
 	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
 	var prefix: String = "[%s] " % rarity_name
@@ -142,7 +144,7 @@ func _get_weapon_choice_text(choice: StatBuff) -> String:
 		Stats.BuffableStats.AXE_WEAPON:
 			return "[%s] Hacha orbital - Desbloquea hacha" % rarity_name
 		Stats.BuffableStats.AXE_COOLDOWN:
-			return "[%s] Engranaje liviano - Cooldown 0.8s" % rarity_name
+			return "[%s] Engranaje liviano - Cooldown 1.2s" % rarity_name
 		Stats.BuffableStats.AXE_EXTRA_AXE:
 			return "[%s] Hacha gemela - +1 hacha" % rarity_name
 		Stats.BuffableStats.AXE_DAMAGE:
@@ -162,3 +164,7 @@ func _get_shield_choice_text(choice: StatBuff) -> String:
 		3:
 			return "[%s] Escudo acelerado - Cooldown 30s" % rarity_name
 	return "[%s] %s" % [rarity_name, choice.display_name]
+
+func _get_health_regen_choice_text(choice: StatBuff) -> String:
+	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	return "[%s] %s - +%s vida/s" % [rarity_name, choice.display_name, _format_number(choice.buff_amount)]

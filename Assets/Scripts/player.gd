@@ -72,6 +72,7 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 	_tick_shield(delta)
+	_tick_health_regen(delta)
 	_tick_weapons(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -168,6 +169,7 @@ func _build_character_upgrade_pool(amount_scale: float) -> Array[StatBuff]:
 		StatBuff.new(Stats.BuffableStats.PICKUP_RANGE, 45.0, StatBuff.BuffType.ADD, StatBuff.Rarity.COMMON, 1, "Iman de chatarra"),
 		StatBuff.new(Stats.BuffableStats.DAMAGE_REDUCTION, 0.05, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Blindaje de vapor"),
 		StatBuff.new(Stats.BuffableStats.SHIELD, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Escudo de emergencia"),
+		StatBuff.new(Stats.BuffableStats.HEALTH_REGEN, 0.5 * amount_scale, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 2, "Reparacion automatica"),
 	]
 
 func _build_weapon_unlock_pool(new_level: int) -> Array[StatBuff]:
@@ -311,6 +313,7 @@ func _is_character_upgrade(stat: Stats.BuffableStats) -> bool:
 		Stats.BuffableStats.PICKUP_RANGE,
 		Stats.BuffableStats.DAMAGE_REDUCTION,
 		Stats.BuffableStats.SHIELD,
+		Stats.BuffableStats.HEALTH_REGEN,
 	].has(stat)
 
 func _get_weapon_id_for_unlock(stat: Stats.BuffableStats) -> String:
@@ -406,6 +409,13 @@ func _tick_shield(delta: float) -> void:
 	if shield_cooldown_timer <= 0.0:
 		shield_ready = true
 		Global.debug_log("Escudo listo")
+
+func _tick_health_regen(delta: float) -> void:
+	if stats == null or stats.current_health_regen <= 0.0 or stats.health <= 0.0:
+		return
+	if stats.health >= stats.current_max_health:
+		return
+	stats.health += stats.current_health_regen * delta
 
 func _get_shield_cooldown_seconds() -> float:
 	var shield_level: int = _get_upgrade_stack_count(Stats.BuffableStats.SHIELD)

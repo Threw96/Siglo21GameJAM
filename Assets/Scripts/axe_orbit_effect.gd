@@ -5,7 +5,7 @@ var player: Player
 var damage_amount: float = 1.0
 var damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL
 var axe_count: int = 1
-var radius: float = 72.0
+var radius: float = 112.0
 var duration: float = 0.75
 var rotation_speed: float = TAU * 2.4
 var elapsed: float = 0.0

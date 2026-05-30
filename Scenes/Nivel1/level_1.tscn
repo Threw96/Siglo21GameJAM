@@ -34,7 +34,7 @@ base_wait_time = 1.5
 min_wait_time = 0.5
 wait_time_decrease_per_minute = 0.12
 enemy_health_growth_per_minute = 0.5
-enemy_damage_growth_per_minute = 15.0
+enemy_damage_growth_per_minute = 5.0
 
 [node name="x1" type="Marker2D" parent="spawn" unique_id=2084239494]
 

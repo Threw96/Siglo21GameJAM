@@ -9,22 +9,34 @@ class_name LaserWeapon
 @export var base_damage_multiplier: float = 0.85
 @export var damage_type: Stats.DamageType = Stats.DamageType.ELECTRIC
 @export var visual_color: Color = Color(0.25, 0.9, 1.0, 0.9)
+@export var idle_rotation_step_degrees: float = 71.0
+
+var shot_sequence: int = 0
 
 func _ready() -> void:
 	weapon_id = "laser"
 	display_name = "Laser"
-	fire_rate_multiplier = 0.35
+	use_player_fire_rate = false
+	cooldown_seconds = 1.0
 
 func try_attack(owner: Player, stats: Stats) -> bool:
-	var targets: Array[Enemy] = _find_nearest_enemies(owner, stats, beam_count)
-	if targets.is_empty():
-		return false
 	var muzzle: Node2D = get_node_or_null(muzzle_path) as Node2D
 	if muzzle == null:
 		return false
-	for target in targets:
-		_fire_beam(owner, stats, muzzle.global_position, target.global_position)
+	var target: Enemy = _find_nearest_enemy(owner, stats)
+	var base_direction: Vector2 = _get_base_direction(owner, target)
+	var spread_radians: float = deg_to_rad(18.0)
+	var first_offset: float = -spread_radians * float(beam_count - 1) * 0.5
+	for index in range(beam_count):
+		_fire_beam(owner, stats, muzzle.global_position, base_direction.rotated(first_offset + spread_radians * float(index)))
+	shot_sequence += 1
 	return true
+
+func _find_nearest_enemy(owner: Player, stats: Stats) -> Enemy:
+	var enemies: Array[Enemy] = _find_nearest_enemies(owner, stats, 1)
+	if enemies.is_empty():
+		return null
+	return enemies[0]
 
 func apply_upgrade(upgrade_stat: Stats.BuffableStats) -> void:
 	match upgrade_stat:
@@ -62,16 +74,21 @@ func _insert_enemy_by_distance(enemies: Array[Enemy], enemy: Enemy, origin: Vect
 	if enemies.size() > max_amount:
 		enemies.pop_back()
 
-func _fire_beam(owner: Player, stats: Stats, start_position: Vector2, target_position: Vector2) -> void:
-	var direction: Vector2 = start_position.direction_to(target_position).normalized()
+func _get_base_direction(owner: Player, target: Enemy) -> Vector2:
+	if target != null:
+		return owner.global_position.direction_to(target.global_position).normalized()
+	if owner.velocity.length_squared() > 0.01:
+		return owner.velocity.normalized().rotated(PI * 0.5)
+	return Vector2.RIGHT.rotated(deg_to_rad(idle_rotation_step_degrees * float(shot_sequence) + 23.0))
+
+func _fire_beam(owner: Player, stats: Stats, start_position: Vector2, direction: Vector2) -> void:
+	direction = direction.normalized()
 	if direction == Vector2.ZERO:
 		return
 	var max_distance: float = stats.current_weapon_range * range_multiplier
 	var end_position: Vector2 = start_position + direction * max_distance
 	var hit_enemies: Array[Enemy] = _get_hit_enemies(owner, stats, start_position, end_position)
-	if hit_enemies.is_empty():
-		return
-	if not piercing:
+	if not hit_enemies.is_empty() and not piercing:
 		end_position = hit_enemies[0].global_position
 		var first_enemy: Enemy = hit_enemies[0]
 		hit_enemies.clear()

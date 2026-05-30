@@ -2,7 +2,7 @@ extends Weapon
 class_name AxeWeapon
 
 @export var axe_count: int = 1
-@export var radius: float = 72.0
+@export var radius: float = 112.0
 @export var effect_duration: float = 0.75
 @export var base_damage_multiplier: float = 0.9
 
@@ -10,7 +10,7 @@ func _ready() -> void:
 	weapon_id = "axe"
 	display_name = "Hacha orbital"
 	use_player_fire_rate = false
-	cooldown_seconds = 2.0
+	cooldown_seconds = 2.6
 
 func try_attack(owner: Player, stats: Stats) -> bool:
 	var parent: Node = owner.get_parent()
@@ -26,7 +26,7 @@ func try_attack(owner: Player, stats: Stats) -> bool:
 func apply_upgrade(upgrade_stat: Stats.BuffableStats) -> void:
 	match upgrade_stat:
 		Stats.BuffableStats.AXE_COOLDOWN:
-			cooldown_seconds = 0.8
+			cooldown_seconds = 1.2
 		Stats.BuffableStats.AXE_EXTRA_AXE:
 			axe_count += 1
 		Stats.BuffableStats.AXE_DAMAGE:

@@ -60,6 +60,7 @@ func _update_stats_label() -> void:
 		"Disparos/seg: %s" % _format_number(stats.current_fire_rate),
 		"Rango arma: %s" % _format_number(stats.current_weapon_range),
 		"Rango gemas: %s" % _format_number(stats.current_pickup_range),
+		"Regeneracion: %s/s" % _format_number(stats.current_health_regen),
 	])
 
 func _get_upgrade_label(stat: Stats.BuffableStats) -> String:
@@ -82,6 +83,8 @@ func _get_upgrade_label(stat: Stats.BuffableStats) -> String:
 			return "ARM"
 		Stats.BuffableStats.SHIELD:
 			return "SHD"
+		Stats.BuffableStats.HEALTH_REGEN:
+			return "RGN"
 		Stats.BuffableStats.PHYSICAL_RESISTANCE:
 			return "PHY"
 		Stats.BuffableStats.ELECTRIC_RESISTANCE:

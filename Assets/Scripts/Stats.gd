@@ -27,7 +27,8 @@ enum BuffableStats {
 	AXE_WEAPON,
 	AXE_COOLDOWN,
 	AXE_EXTRA_AXE,
-	AXE_DAMAGE
+	AXE_DAMAGE,
+	HEALTH_REGEN
 }
 
 enum DamageType {
@@ -45,6 +46,9 @@ const STAT_CURVES: Dictionary[BuffableStats, Curve] = {
 const BASE_LEVEL_EXP: float = 100.0
 const DEFENSE_REDUCTION_SCALE: float = 300.0
 const MAX_DEFENSE_REDUCTION: float = 0.65
+const MAX_NATURAL_HEALTH: float = 150.0
+const MAX_DEFENSE: float = 100.0
+const MAX_ATTACK_WITHOUT_UPGRADE: float = 200.0
 
 signal health_depleted
 signal health_changed(cur_health: float , max_health:float)
@@ -66,6 +70,7 @@ signal leveled_up(new_level: int, old_level: int)
 @export var base_pickup_range: float = 120
 @export var base_projectile_count: float = 1
 @export var base_weapon_range: float = 256
+@export var base_health_regen: float = 0.0
 @export var experience: float = 0: set = on_experience_set
 
 var level: int:
@@ -83,6 +88,7 @@ var current_fire_resistance: float = 0
 var current_pickup_range: float = 120
 var current_projectile_count: float = 1
 var current_weapon_range: float = 256
+var current_health_regen: float = 0.0
 var health: float = 0 : set = _on_health_set
 var is_invulnerable: bool = false
 
@@ -121,9 +127,12 @@ func _recalculate_stats_and_refresh_health(heal_to_max: bool = false) -> void:
 func recalculate_stats() -> void:
 	var stat_multipliers: Dictionary = {}
 	var stat_addens: Dictionary = {}
+	var has_attack_upgrade: bool = false
 	#recorre los diccionarios de mejoras y le indica como comportarse
 	for buff in stat_buffs:
 		var stat_name: String = BuffableStats.keys()[buff.stat].to_lower()
+		if buff.stat == BuffableStats.ATTACK:
+			has_attack_upgrade = true
 		match  buff.buff_type:
 			StatBuff.BuffType.ADD:
 				if not stat_addens.has(stat_name):
@@ -141,6 +150,8 @@ func recalculate_stats() -> void:
 	current_max_health = base_max_health * _get_curve_multiplier(BuffableStats.MAX_HEALTH, stat_sample_pos)
 	current_defense = base_defense * _get_curve_multiplier(BuffableStats.DEFENSE, stat_sample_pos)
 	current_attack = base_attack * _get_curve_multiplier(BuffableStats.ATTACK, stat_sample_pos)
+	current_max_health = minf(current_max_health, MAX_NATURAL_HEALTH)
+	current_attack = minf(current_attack, MAX_ATTACK_WITHOUT_UPGRADE)
 	current_move_speed = base_move_speed * _get_curve_multiplier(BuffableStats.MOVE_SPEED, stat_sample_pos)
 	current_fire_rate = base_fire_rate * _get_curve_multiplier(BuffableStats.FIRE_RATE, stat_sample_pos)
 	current_damage_reduction = base_damage_reduction
@@ -150,6 +161,7 @@ func recalculate_stats() -> void:
 	current_pickup_range = base_pickup_range
 	current_projectile_count = base_projectile_count
 	current_weapon_range = base_weapon_range
+	current_health_regen = base_health_regen
 	
 	#aplica mejoras de nivel por multiplicador
 	for stat_name in stat_multipliers:
@@ -168,6 +180,10 @@ func recalculate_stats() -> void:
 			Global.debug_log("Stats ignoro buff sin propiedad actual: %s" % cur_property_name)
 			continue
 		set(cur_property_name, float(add_current_value) + stat_addens[stat_name])
+
+	current_defense = minf(current_defense, MAX_DEFENSE)
+	if not has_attack_upgrade:
+		current_attack = minf(current_attack, MAX_ATTACK_WITHOUT_UPGRADE)
 
 func _on_health_set(new_value: float) -> void:
 	health = clampf(new_value,0,current_max_health)

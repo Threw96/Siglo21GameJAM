@@ -21,9 +21,6 @@ damage = 100
 defense_penetration = 0.75
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1564342201]
-modulate = Color(0.89079136, 0.8528495, 1, 1)
-self_modulate = Color(0.7490196, 0, 0.24313726, 1)
-top_level = true
 scale = Vector2(0.23, 0.23)
 texture = ExtResource("2_boss_copper")
 

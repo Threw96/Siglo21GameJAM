@@ -130,6 +130,7 @@ func _show_next_upgrade_menu() -> void:
 		_show_next_upgrade_menu.call_deferred()
 		return
 	upgrade_menu_active = true
+	AudioManager.play_level_up()
 	upgrade_choices_ready.emit(pending_upgrade_choices)
 	var menu: Node = upgrade_menu_scene.instantiate()
 	get_tree().root.add_child(menu)
@@ -457,6 +458,7 @@ func Die() -> void:
 		return
 	is_dead = true
 	Global.stop_run()
+	AudioManager.play_game_over()
 	if Global.Player == self:
 		Global.Player = null
 	cleanup_runtime_ui()

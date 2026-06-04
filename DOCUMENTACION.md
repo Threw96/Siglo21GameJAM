@@ -367,6 +367,40 @@ Debug:
 - Muestra numeros exactos de experiencia.
 - Habilita logs mediante `Global.debug_log()`.
 
+### Audio
+
+Archivo: `Assets/Scripts/audio_manager.gd`
+
+`AudioManager` esta registrado como autoload en `project.godot`, por eso existe durante todo el juego y no se reinicia al cambiar de escena.
+
+Sonidos actuales:
+
+- `Assets/Sounds/game-start.mp3`: suena una sola vez al abrir el juego.
+- `Assets/Sounds/music-sound.mp3`: musica de fondo en loop.
+- `Assets/Sounds/button-ui-sound.mp3`: suena al enfocar, pasar el mouse o presionar botones UI.
+- `Assets/Sounds/game-over.mp3`: suena cuando muere el player.
+- `Assets/Sounds/levelup-sound.mp3`: suena cuando aparece el menu de mejora.
+- `Assets/Sounds/shotgun-sound.mp3`: suena cada vez que dispara la shotgun.
+
+Volumenes para balancear:
+
+```gdscript
+MUSIC_VOLUME_DB = -16.0
+SFX_VOLUME_DB = -2.0
+UI_VOLUME_DB = -8.0
+SHOTGUN_VOLUME_DB = -5.0
+```
+
+La musica queda mas baja que los efectos. Para subirla, acercar `MUSIC_VOLUME_DB` a `0`. Para bajarla, usar valores mas negativos.
+
+El sonido de UI tiene un cooldown corto:
+
+```gdscript
+UI_SOUND_COOLDOWN_SECONDS = 0.05
+```
+
+Esto evita que mouse hover y click disparen demasiados sonidos juntos.
+
 ## Estructura importante
 
 ### Scripts

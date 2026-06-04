@@ -4,6 +4,7 @@ extends Control
 @export_file("*.tscn") var main_menu_scene_path: String = "res://Scenes/Menu.tscn"
 
 var selected_index: int = 0
+var transition_locked: bool = false
 var character_names: Array[String] = [
 	"Ingeniero",
 	"Mecanico",
@@ -40,10 +41,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		_select_character(wrapi(selected_index + 1, 0, character_buttons.size()))
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") or _is_confirm_key(event):
-		_start_game()
+		if get_viewport().gui_get_focus_owner() == back_button:
+			_go_back()
+		else:
+			_start_game()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		_on_back_button_pressed()
+		_go_back()
 		get_viewport().set_input_as_handled()
 
 func _select_character(index: int) -> void:
@@ -53,16 +57,27 @@ func _select_character(index: int) -> void:
 	character_buttons[selected_index].grab_focus()
 
 func _start_game() -> void:
+	if transition_locked:
+		return
+	transition_locked = true
 	Global.selected_character_id = selected_index
 	Global.selected_character_name = character_names[selected_index]
-	get_tree().change_scene_to_file(game_scene_path)
+	get_tree().call_deferred("change_scene_to_file", game_scene_path)
 
 func _on_character_button_pressed(index: int) -> void:
+	if transition_locked:
+		return
 	_select_character(index)
 	_start_game()
 
 func _on_back_button_pressed() -> void:
-	get_tree().change_scene_to_file(main_menu_scene_path)
+	_go_back()
+
+func _go_back() -> void:
+	if transition_locked:
+		return
+	transition_locked = true
+	get_tree().call_deferred("change_scene_to_file", main_menu_scene_path)
 
 func _is_confirm_key(event: InputEvent) -> bool:
 	if not event is InputEventKey:

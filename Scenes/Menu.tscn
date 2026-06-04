@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://b1mlwqjoxubjg"]
+[gd_scene format=3 uid="uid://b1mlwqjoxubjg"]
 
 [ext_resource type="Script" uid="uid://df1u8amt7esg5" path="res://Assets/Scripts/main_menu.gd" id="1_menu"]
-[ext_resource type="Script" path="res://Assets/Scripts/gear_decoration.gd" id="2_gears"]
+[ext_resource type="Script" uid="uid://cllrl73sb2nm4" path="res://Assets/Scripts/gear_decoration.gd" id="2_gears"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.58, 0.39, 0.14, 1)
@@ -48,7 +48,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 
-[node name="ParchmentGlow" type="Panel" parent="."]
+[node name="ParchmentGlow" type="Panel" parent="." unique_id=924114139]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -64,7 +64,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_inner_bg")
 
-[node name="TopLeftGears" type="Control" parent="."]
+[node name="TopLeftGears" type="Control" parent="." unique_id=1679920968]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,7 +74,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("2_gears")
 
-[node name="TopRightGears" type="Control" parent="."]
+[node name="TopRightGears" type="Control" parent="." unique_id=1959502769]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -85,7 +85,7 @@ mouse_filter = 2
 script = ExtResource("2_gears")
 corner = 1
 
-[node name="BottomLeftGears" type="Control" parent="."]
+[node name="BottomLeftGears" type="Control" parent="." unique_id=214679417]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -96,7 +96,7 @@ mouse_filter = 2
 script = ExtResource("2_gears")
 corner = 2
 
-[node name="BottomRightGears" type="Control" parent="."]
+[node name="BottomRightGears" type="Control" parent="." unique_id=201718383]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

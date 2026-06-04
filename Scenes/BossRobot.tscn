@@ -1,11 +1,7 @@
 [gd_scene format=3 uid="uid://bt13rck1asjrm"]
 
 [ext_resource type="Script" uid="uid://6vfi1dbqv7h2" path="res://Assets/Scripts/boss_robot.gd" id="1_boss"]
-[ext_resource type="Texture2D" uid="uid://clf0tmbvltsda" path="res://enemigos.jpg" id="2_enemies"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_big_robot"]
-atlas = ExtResource("2_enemies")
-region = Rect2(800, 336.075, 800, 745)
+[ext_resource type="Texture2D" uid="uid://ddsi2w4fpft6n" path="res://Assets/Images/enemies/boss_robot_copper.png" id="2_boss_copper"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(115, 140)
@@ -19,14 +15,14 @@ collision_mask = 5
 motion_mode = 1
 script = ExtResource("1_boss")
 speed = 70.0
-max_health = 9000.0
+max_health = 2000.0
 experience_value = 350.0
 damage = 100
 defense_penetration = 0.75
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1564342201]
 scale = Vector2(0.23, 0.23)
-texture = SubResource("AtlasTexture_big_robot")
+texture = ExtResource("2_boss_copper")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1841133395]
 position = Vector2(0, 14)

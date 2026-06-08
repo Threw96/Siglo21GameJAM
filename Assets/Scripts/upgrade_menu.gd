@@ -79,8 +79,8 @@ func _get_choice_text(choice: StatBuff) -> String:
 		return _get_shield_choice_text(choice)
 	if choice.stat == Stats.BuffableStats.HEALTH_REGEN:
 		return _get_health_regen_choice_text(choice)
-	var stat_name: String = String(Stats.BuffableStats.keys()[choice.stat]).capitalize().replace("_", " ")
-	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	var stat_name: String = _get_stat_name(choice.stat)
+	var rarity_name: String = _get_rarity_name(choice.rarity)
 	var prefix: String = "[%s] " % rarity_name
 	if not choice.display_name.is_empty():
 		prefix += "%s - " % choice.display_name
@@ -92,6 +92,46 @@ func _get_choice_text(choice: StatBuff) -> String:
 		StatBuff.BuffType.MULTIPLY:
 			return "%s+%d%% %s" % [prefix, roundi(choice.buff_amount * 100.0), stat_name]
 	return "%s%s" % [prefix, stat_name]
+
+func _get_rarity_name(rarity: StatBuff.Rarity) -> String:
+	match rarity:
+		StatBuff.Rarity.COMMON:
+			return "Comun"
+		StatBuff.Rarity.RARE:
+			return "Rara"
+		StatBuff.Rarity.EPIC:
+			return "Epica"
+	return "Comun"
+
+func _get_stat_name(stat: Stats.BuffableStats) -> String:
+	match stat:
+		Stats.BuffableStats.MAX_HEALTH:
+			return "vida maxima"
+		Stats.BuffableStats.DEFENSE:
+			return "defensa"
+		Stats.BuffableStats.ATTACK:
+			return "dano"
+		Stats.BuffableStats.MOVE_SPEED:
+			return "velocidad"
+		Stats.BuffableStats.FIRE_RATE:
+			return "cadencia"
+		Stats.BuffableStats.DAMAGE_REDUCTION:
+			return "reduccion de dano"
+		Stats.BuffableStats.PHYSICAL_RESISTANCE:
+			return "resistencia fisica"
+		Stats.BuffableStats.ELECTRIC_RESISTANCE:
+			return "resistencia electrica"
+		Stats.BuffableStats.FIRE_RESISTANCE:
+			return "resistencia al fuego"
+		Stats.BuffableStats.PICKUP_RANGE:
+			return "rango de gemas"
+		Stats.BuffableStats.PROJECTILE_COUNT:
+			return "proyectiles"
+		Stats.BuffableStats.WEAPON_RANGE:
+			return "rango de arma"
+		Stats.BuffableStats.HEALTH_REGEN:
+			return "regeneracion"
+	return String(Stats.BuffableStats.keys()[stat]).to_lower().replace("_", " ")
 
 func _is_percentage_add_stat(stat: Stats.BuffableStats) -> bool:
 	return [
@@ -123,28 +163,28 @@ func _is_weapon_choice(stat: Stats.BuffableStats) -> bool:
 	].has(stat)
 
 func _get_weapon_choice_text(choice: StatBuff) -> String:
-	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	var rarity_name: String = _get_rarity_name(choice.rarity)
 	match choice.stat:
 		Stats.BuffableStats.SHOTGUN_WEAPON:
-			return "[%s] Shotgun - Desbloquea escopeta" % rarity_name
+			return "[%s] Escopeta - Desbloquea arma" % rarity_name
 		Stats.BuffableStats.SHOTGUN_EXTRA_PROJECTILE:
-			return "[%s] Cartucho doble - +1 bala shotgun" % rarity_name
+			return "[%s] Cartucho doble - +1 bala de escopeta" % rarity_name
 		Stats.BuffableStats.SHOTGUN_FIRE_RATE:
-			return "[%s] Recarga rapida - +30%% cadencia shotgun" % rarity_name
+			return "[%s] Recarga rapida - +30%% cadencia de escopeta" % rarity_name
 		Stats.BuffableStats.SHOTGUN_DAMAGE:
-			return "[%s] Municion pesada - +25%% dano shotgun" % rarity_name
+			return "[%s] Municion pesada - +25%% dano de escopeta" % rarity_name
 		Stats.BuffableStats.LASER_WEAPON:
-			return "[%s] Bobina laser - Desbloquea laser" % rarity_name
+			return "[%s] Bobina de rayos - Desbloquea arma" % rarity_name
 		Stats.BuffableStats.LASER_EXTRA_BEAM:
-			return "[%s] Rayo gemelo - +1 laser" % rarity_name
+			return "[%s] Rayo gemelo - +1 rayo" % rarity_name
 		Stats.BuffableStats.LASER_PIERCING:
 			return "[%s] Rayo perforante - Atraviesa enemigos" % rarity_name
 		Stats.BuffableStats.LASER_DAMAGE:
-			return "[%s] Bobina sobrecargada - +25%% dano laser" % rarity_name
+			return "[%s] Bobina sobrecargada - +25%% dano de rayo" % rarity_name
 		Stats.BuffableStats.AXE_WEAPON:
 			return "[%s] Hacha orbital - Desbloquea hacha" % rarity_name
 		Stats.BuffableStats.AXE_COOLDOWN:
-			return "[%s] Engranaje liviano - Cooldown 1.2s" % rarity_name
+			return "[%s] Engranaje liviano - Recarga 1.2s" % rarity_name
 		Stats.BuffableStats.AXE_EXTRA_AXE:
 			return "[%s] Hacha gemela - +1 hacha" % rarity_name
 		Stats.BuffableStats.AXE_DAMAGE:
@@ -152,7 +192,7 @@ func _get_weapon_choice_text(choice: StatBuff) -> String:
 	return "[%s] %s" % [rarity_name, choice.display_name]
 
 func _get_shield_choice_text(choice: StatBuff) -> String:
-	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	var rarity_name: String = _get_rarity_name(choice.rarity)
 	var current_level: int = 0
 	if player != null:
 		current_level = player.get_upgrade_stack_count_for_ui(Stats.BuffableStats.SHIELD)
@@ -160,11 +200,11 @@ func _get_shield_choice_text(choice: StatBuff) -> String:
 		1:
 			return "[%s] Escudo de emergencia - Bloquea 1 golpe cada 60s" % rarity_name
 		2:
-			return "[%s] Escudo calibrado - Cooldown 45s" % rarity_name
+			return "[%s] Escudo calibrado - Recarga 45s" % rarity_name
 		3:
-			return "[%s] Escudo acelerado - Cooldown 30s" % rarity_name
+			return "[%s] Escudo acelerado - Recarga 30s" % rarity_name
 	return "[%s] %s" % [rarity_name, choice.display_name]
 
 func _get_health_regen_choice_text(choice: StatBuff) -> String:
-	var rarity_name: String = String(StatBuff.Rarity.keys()[choice.rarity]).capitalize()
+	var rarity_name: String = _get_rarity_name(choice.rarity)
 	return "[%s] %s - +%s vida/s" % [rarity_name, choice.display_name, _format_number(choice.buff_amount)]

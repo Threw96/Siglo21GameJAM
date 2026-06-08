@@ -93,7 +93,7 @@ func add_experience(amount: float) -> void:
 	if stats == null:
 		return
 	stats.add_experience(amount)
-	Global.debug_log("Player XP: %s | Nivel: %s | Falta: %s" % [stats.experience, stats.level, stats.get_experience_to_next_level()])
+	Global.debug_log("Player EXP: %s | Nivel: %s | Falta: %s" % [stats.experience, stats.level, stats.get_experience_to_next_level()])
 
 func choose_upgrade(choice_index: int) -> void:
 	if choice_index < 0 or choice_index >= pending_upgrade_choices.size():
@@ -177,8 +177,8 @@ func _build_weapon_unlock_pool(new_level: int) -> Array[StatBuff]:
 	if new_level < 2 or weapons.size() >= MAX_WEAPON_SLOTS:
 		return []
 	return [
-		StatBuff.new(Stats.BuffableStats.SHOTGUN_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Shotgun"),
-		StatBuff.new(Stats.BuffableStats.LASER_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Bobina laser"),
+		StatBuff.new(Stats.BuffableStats.SHOTGUN_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Escopeta"),
+		StatBuff.new(Stats.BuffableStats.LASER_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Bobina de rayos"),
 		StatBuff.new(Stats.BuffableStats.AXE_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Hacha orbital"),
 	]
 

@@ -15,7 +15,7 @@ var shot_sequence: int = 0
 
 func _ready() -> void:
 	weapon_id = "laser"
-	display_name = "Laser"
+	display_name = "Bobina de rayos"
 	use_player_fire_rate = false
 	cooldown_seconds = 1.0
 

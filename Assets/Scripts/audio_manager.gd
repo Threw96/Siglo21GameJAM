@@ -35,6 +35,9 @@ func play_game_start_once() -> void:
 	if game_start_played:
 		return
 	game_start_played = true
+	play_game_start()
+
+func play_game_start() -> void:
 	_play_sfx(GAME_START_SOUND, SFX_VOLUME_DB)
 
 func play_music() -> void:

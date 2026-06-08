@@ -3,7 +3,7 @@ class_name ShotgunWeapon
 
 func _ready() -> void:
 	weapon_id = "shotgun"
-	display_name = "Shotgun"
+	display_name = "Escopeta"
 	use_player_fire_rate = false
 	cooldown_seconds = 1.0
 

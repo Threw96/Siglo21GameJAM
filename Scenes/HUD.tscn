@@ -48,7 +48,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "0 / 0 XP"
+text = "0 / 0 EXP"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -80,5 +80,5 @@ horizontal_alignment = 2
 [node name="KillsLabel" type="Label" parent="RunInfo"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Kills 0"
+text = "Bajas 0"
 horizontal_alignment = 2

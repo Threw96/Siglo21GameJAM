@@ -10,11 +10,15 @@ extends Node2D
 @export var enemy_damage_growth_per_minute: float = 0.15
 @export var spawn_outside_camera: bool = true
 @export var boss_spawn_interval_seconds: float = 300.0
+@export var boss_kills_required_to_win: int = 1
+@export_file("*.tscn") var victory_scene_path: String = "res://Scenes/VictoryMenu.tscn"
 
 @onready var timer: Timer = get_parent().get_node_or_null("Timer") as Timer
 
 var next_boss_spawn_time: float = 300.0
 var active_boss: Enemy
+var defeated_boss_count: int = 0
+var victory_triggered: bool = false
 
 func _ready() -> void:
 	next_boss_spawn_time = boss_spawn_interval_seconds
@@ -22,6 +26,8 @@ func _ready() -> void:
 		timer.wait_time = base_wait_time
 
 func _on_timer_timeout() -> void:
+	if victory_triggered:
+		return
 	if _has_active_boss():
 		return
 	if Global.survived_time >= next_boss_spawn_time:
@@ -62,11 +68,28 @@ func _spawn_boss() -> void:
 
 func _on_boss_died(_boss: Enemy) -> void:
 	active_boss = null
+	defeated_boss_count += 1
+	if _should_trigger_victory():
+		_trigger_victory()
+		return
 	next_boss_spawn_time = _get_next_boss_spawn_time()
 	Global.debug_log("Boss derrotado. Proximo boss en %s segundos" % next_boss_spawn_time)
 
 func _has_active_boss() -> bool:
 	return active_boss != null and is_instance_valid(active_boss)
+
+func _should_trigger_victory() -> bool:
+	return boss_kills_required_to_win > 0 and defeated_boss_count >= boss_kills_required_to_win
+
+func _trigger_victory() -> void:
+	if victory_triggered:
+		return
+	victory_triggered = true
+	Global.stop_run()
+	if timer != null:
+		timer.stop()
+	get_tree().paused = false
+	get_tree().call_deferred("change_scene_to_file", victory_scene_path)
 
 func _get_next_boss_spawn_time() -> float:
 	var next_time: float = next_boss_spawn_time + boss_spawn_interval_seconds

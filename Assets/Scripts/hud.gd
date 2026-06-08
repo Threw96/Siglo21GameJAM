@@ -44,7 +44,7 @@ func _update_hud() -> void:
 	xp_bar.max_value = required_xp
 	xp_bar.value = current_xp
 	xp_label.visible = Global.debug_enabled
-	xp_label.text = "%d / %d XP" % [roundi(current_xp), roundi(required_xp)]
+	xp_label.text = "%d / %d EXP" % [roundi(current_xp), roundi(required_xp)]
 	level_label.text = "Nivel %s" % stats.level
 
 func _on_survived_time_changed(time_seconds: float) -> void:
@@ -54,4 +54,4 @@ func _on_survived_time_changed(time_seconds: float) -> void:
 	time_label.text = "%02d:%02d" % [minutes, seconds]
 
 func _on_enemies_killed_changed(kill_count: int) -> void:
-	kills_label.text = "Kills %s" % kill_count
+	kills_label.text = "Bajas %s" % kill_count

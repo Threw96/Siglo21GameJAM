@@ -2,7 +2,6 @@ extends Weapon
 class_name LaserWeapon
 
 @export var targeting_area_path: NodePath = NodePath("../Area2D")
-@export var muzzle_path: NodePath = NodePath("../Weapon/DoubleBarrelShotgunIcon/pivot")
 @export var beam_count: int = 1
 @export var piercing: bool = false
 @export var beam_width: float = 20.0
@@ -20,15 +19,13 @@ func _ready() -> void:
 	cooldown_seconds = 1.0
 
 func try_attack(owner: Player, stats: Stats) -> bool:
-	var muzzle: Node2D = get_node_or_null(muzzle_path) as Node2D
-	if muzzle == null:
-		return false
+	var muzzle_position: Vector2 = owner.get_weapon_muzzle_position(weapon_id)
 	var target: Enemy = _find_nearest_enemy(owner, stats)
 	var base_direction: Vector2 = _get_base_direction(owner, target)
 	var spread_radians: float = deg_to_rad(18.0)
 	var first_offset: float = -spread_radians * float(beam_count - 1) * 0.5
 	for index in range(beam_count):
-		_fire_beam(owner, stats, muzzle.global_position, base_direction.rotated(first_offset + spread_radians * float(index)))
+		_fire_beam(owner, stats, muzzle_position, base_direction.rotated(first_offset + spread_radians * float(index)))
 	shot_sequence += 1
 	return true
 

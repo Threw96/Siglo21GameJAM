@@ -1,8 +1,10 @@
 [gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://Assets/Scripts/character_select_menu.gd" id="1_select"]
-[ext_resource type="Texture2D" uid="uid://dpbhp3egb4e4t" path="res://personajes.png" id="2_chars"]
+[ext_resource type="Texture2D" path="res://Assets/Images/ingeniero.png" id="2_engineer"]
 [ext_resource type="Script" path="res://Assets/Scripts/gear_decoration.gd" id="3_gears"]
+[ext_resource type="Texture2D" path="res://Assets/Images/mecanico.png" id="4_mechanic"]
+[ext_resource type="Texture2D" path="res://Assets/Images/electricista.png" id="5_electrician"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.58, 0.39, 0.14, 1)
@@ -42,18 +44,6 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_engineer"]
-atlas = ExtResource("2_chars")
-region = Rect2(0, 0, 360, 464)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_mechanic"]
-atlas = ExtResource("2_chars")
-region = Rect2(390, 0, 420, 464)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_welder"]
-atlas = ExtResource("2_chars")
-region = Rect2(850, 0, 413, 464)
 
 [node name="CharacterSelectMenu" type="Control"]
 layout_mode = 3
@@ -167,7 +157,7 @@ theme_override_constants/separation = 10
 [node name="Portrait" type="TextureRect" parent="CenterContainer/VBoxContainer/CharacterRow/EngineerCard/CardContent"]
 custom_minimum_size = Vector2(260, 300)
 layout_mode = 2
-texture = SubResource("AtlasTexture_engineer")
+texture = ExtResource("2_engineer")
 expand_mode = 1
 stretch_mode = 5
 
@@ -198,7 +188,7 @@ theme_override_constants/separation = 10
 [node name="Portrait" type="TextureRect" parent="CenterContainer/VBoxContainer/CharacterRow/MechanicCard/CardContent"]
 custom_minimum_size = Vector2(260, 300)
 layout_mode = 2
-texture = SubResource("AtlasTexture_mechanic")
+texture = ExtResource("4_mechanic")
 expand_mode = 1
 stretch_mode = 5
 
@@ -229,7 +219,7 @@ theme_override_constants/separation = 10
 [node name="Portrait" type="TextureRect" parent="CenterContainer/VBoxContainer/CharacterRow/WelderCard/CardContent"]
 custom_minimum_size = Vector2(260, 300)
 layout_mode = 2
-texture = SubResource("AtlasTexture_welder")
+texture = ExtResource("5_electrician")
 expand_mode = 1
 stretch_mode = 5
 
@@ -237,7 +227,7 @@ stretch_mode = 5
 layout_mode = 2
 theme_override_colors/font_color = Color(0.24, 0.055, 0.02, 1)
 theme_override_font_sizes/font_size = 22
-text = "Soldador"
+text = "Electricista"
 horizontal_alignment = 1
 
 [node name="ChooseButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterRow/WelderCard/CardContent"]

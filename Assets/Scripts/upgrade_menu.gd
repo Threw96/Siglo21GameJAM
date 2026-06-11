@@ -182,13 +182,13 @@ func _get_weapon_choice_text(choice: StatBuff) -> String:
 		Stats.BuffableStats.LASER_DAMAGE:
 			return "[%s] Bobina sobrecargada - +25%% dano de rayo" % rarity_name
 		Stats.BuffableStats.AXE_WEAPON:
-			return "[%s] Hacha orbital - Desbloquea hacha" % rarity_name
+			return "[%s] Llave orbital - Desbloquea llave" % rarity_name
 		Stats.BuffableStats.AXE_COOLDOWN:
 			return "[%s] Engranaje liviano - Recarga 1.2s" % rarity_name
 		Stats.BuffableStats.AXE_EXTRA_AXE:
-			return "[%s] Hacha gemela - +1 hacha" % rarity_name
+			return "[%s] Llave gemela - +1 llave" % rarity_name
 		Stats.BuffableStats.AXE_DAMAGE:
-			return "[%s] Filo reforzado - +25%% dano hacha" % rarity_name
+			return "[%s] Acero reforzado - +25%% dano de llave" % rarity_name
 	return "[%s] %s" % [rarity_name, choice.display_name]
 
 func _get_shield_choice_text(choice: StatBuff) -> String:

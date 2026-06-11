@@ -24,11 +24,16 @@ var bullet: PackedScene = preload("res://Scenes/bullet_example.tscn")
 var upgrade_menu_scene: PackedScene = preload("res://Scenes/UpgradeMenu.tscn")
 var pause_menu_scene: PackedScene = preload("res://Scenes/PauseMenu.tscn")
 var hud_scene: PackedScene = preload("res://Scenes/HUD.tscn")
-var character_texture: Texture2D = preload("res://personajes.png")
+var character_textures: Array[Texture2D] = [
+	preload("res://Assets/Images/ingeniero.png"),
+	preload("res://Assets/Images/mecanico.png"),
+	preload("res://Assets/Images/electricista.png"),
+]
 var hud: Node
 var pause_menu: Node
 var weapons: Array[Weapon] = []
 var owned_weapon_ids: Dictionary[String, bool] = {}
+var held_weapon_order: Array[String] = []
 var shotgun_weapon: ShotgunWeapon
 var laser_weapon: LaserWeapon
 var axe_weapon: AxeWeapon
@@ -39,6 +44,12 @@ var invulnerability_timer: SceneTreeTimer
 
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var weapon_range_shape: CollisionShape2D = $Area2D/CollisionShape2D
+@onready var right_hand_anchor: Marker2D = $HandAnchors/RightHand
+@onready var left_hand_anchor: Marker2D = $HandAnchors/LeftHand
+@onready var electric_sphere: Sprite2D = $HandAnchors/ElectricSphere
+@onready var electric_sphere_muzzle: Marker2D = $HandAnchors/ElectricSphere/Muzzle
+@onready var shotgun_visual: Sprite2D = $Weapon/DoubleBarrelShotgunIcon
+@onready var shotgun_muzzle: Marker2D = $Weapon/DoubleBarrelShotgunIcon/pivot
 
 #texto de prueba para control de version
 func _ready() -> void:
@@ -179,7 +190,7 @@ func _build_weapon_unlock_pool(new_level: int) -> Array[StatBuff]:
 	return [
 		StatBuff.new(Stats.BuffableStats.SHOTGUN_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Escopeta"),
 		StatBuff.new(Stats.BuffableStats.LASER_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Bobina de rayos"),
-		StatBuff.new(Stats.BuffableStats.AXE_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Hacha orbital"),
+		StatBuff.new(Stats.BuffableStats.AXE_WEAPON, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.EPIC, 2, "Llave orbital"),
 	]
 
 func _build_owned_weapon_upgrade_pool(_new_level: int) -> Array[StatBuff]:
@@ -221,7 +232,7 @@ func _get_next_weapon_upgrade(weapon_id: String) -> StatBuff:
 				0:
 					return StatBuff.new(Stats.BuffableStats.AXE_COOLDOWN, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Engranaje liviano")
 				1:
-					return StatBuff.new(Stats.BuffableStats.AXE_EXTRA_AXE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Hacha gemela")
+					return StatBuff.new(Stats.BuffableStats.AXE_EXTRA_AXE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Llave gemela")
 				2:
 					return StatBuff.new(Stats.BuffableStats.AXE_DAMAGE, 1.0, StatBuff.BuffType.ADD, StatBuff.Rarity.RARE, 1, "Filo reforzado")
 	return null
@@ -360,6 +371,9 @@ func add_weapon(weapon_id: String) -> bool:
 		weapons.append(weapon)
 	owned_weapon_ids[weapon_id] = true
 	weapon.visible = true
+	if weapon_id == WEAPON_SHOTGUN or weapon_id == WEAPON_LASER:
+		held_weapon_order.append(weapon_id)
+		_refresh_held_weapon_visuals()
 	return true
 
 func _get_or_create_weapon(weapon_id: String) -> Weapon:
@@ -385,9 +399,12 @@ func _get_or_create_weapon(weapon_id: String) -> Weapon:
 func _setup_starting_weapon() -> void:
 	weapons.clear()
 	owned_weapon_ids.clear()
+	held_weapon_order.clear()
 	shotgun_weapon = $Weapon as ShotgunWeapon
 	if shotgun_weapon != null:
 		shotgun_weapon.visible = false
+	if electric_sphere != null:
+		electric_sphere.visible = false
 	match Global.selected_character_id:
 		0:
 			add_weapon(WEAPON_SHOTGUN)
@@ -397,6 +414,38 @@ func _setup_starting_weapon() -> void:
 			add_weapon(WEAPON_LASER)
 		_:
 			add_weapon(WEAPON_SHOTGUN)
+
+func get_weapon_muzzle_position(weapon_id: String) -> Vector2:
+	match weapon_id:
+		WEAPON_SHOTGUN:
+			if shotgun_muzzle != null:
+				return shotgun_muzzle.global_position
+		WEAPON_LASER:
+			if electric_sphere_muzzle != null:
+				return electric_sphere_muzzle.global_position
+	return global_position
+
+func _refresh_held_weapon_visuals() -> void:
+	if shotgun_visual != null:
+		shotgun_visual.visible = false
+	if electric_sphere != null:
+		electric_sphere.visible = false
+	for index in range(mini(held_weapon_order.size(), 2)):
+		var anchor: Marker2D = right_hand_anchor if index == 0 else left_hand_anchor
+		_place_held_weapon_visual(held_weapon_order[index], anchor)
+
+func _place_held_weapon_visual(weapon_id: String, anchor: Marker2D) -> void:
+	if anchor == null:
+		return
+	match weapon_id:
+		WEAPON_SHOTGUN:
+			if shotgun_visual != null:
+				shotgun_visual.position = anchor.position
+				shotgun_visual.visible = true
+		WEAPON_LASER:
+			if electric_sphere != null:
+				electric_sphere.position = anchor.position
+				electric_sphere.visible = true
 
 func _apply_shield_upgrade() -> void:
 	shield_enabled = true
@@ -512,16 +561,12 @@ func _apply_selected_character_sprite() -> void:
 	var sprite: Sprite2D = $OneHanded
 	if sprite == null:
 		return
-	var regions: Array[Rect2] = [
-		Rect2(0, 0, 360, 464),
-		Rect2(390, 0, 420, 464),
-		Rect2(850, 0, 413, 464),
-	]
-	var atlas_texture: AtlasTexture = AtlasTexture.new()
-	atlas_texture.atlas = character_texture
-	atlas_texture.region = regions[clampi(Global.selected_character_id, 0, regions.size() - 1)]
-	sprite.texture = atlas_texture
-	sprite.scale = Vector2(0.16, 0.16)
+	var texture_index: int = clampi(Global.selected_character_id, 0, character_textures.size() - 1)
+	sprite.texture = character_textures[texture_index]
+	var target_height: float = 74.0
+	var texture_height: float = float(sprite.texture.get_height())
+	var character_scale: float = target_height / maxf(texture_height, 1.0)
+	sprite.scale = Vector2(character_scale, character_scale)
 	sprite.position = Vector2(0, -12)
 
 func cleanup_runtime_ui() -> void:

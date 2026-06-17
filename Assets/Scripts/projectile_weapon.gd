@@ -3,7 +3,6 @@ class_name ProjectileWeapon
 
 @export var bullet_scene: PackedScene = preload("res://Scenes/bullet_example.tscn")
 @export var targeting_area_path: NodePath = NodePath("../Area2D")
-@export var muzzle_path: NodePath = NodePath("DoubleBarrelShotgunIcon/pivot")
 @export var visual_path: NodePath = NodePath("DoubleBarrelShotgunIcon")
 @export var spread_degrees: float = 8.0
 @export var extra_projectiles: int = 0
@@ -54,10 +53,10 @@ func _get_base_direction(owner: Player, target: Enemy) -> Vector2:
 	return Vector2.RIGHT.rotated(deg_to_rad(idle_rotation_step_degrees * float(shot_sequence)))
 
 func _fire_projectiles(owner: Player, stats: Stats, base_direction: Vector2) -> void:
-	var muzzle: Node2D = get_node_or_null(muzzle_path) as Node2D
 	var parent: Node = owner.get_parent()
-	if muzzle == null or parent == null:
+	if parent == null:
 		return
+	var muzzle_position: Vector2 = owner.get_weapon_muzzle_position(weapon_id)
 	var projectile_count: int = maxi(1, roundi(stats.current_projectile_count) + extra_projectiles)
 	var spread_radians: float = deg_to_rad(spread_degrees)
 	var first_offset: float = -spread_radians * float(projectile_count - 1) * 0.5
@@ -66,6 +65,6 @@ func _fire_projectiles(owner: Player, stats: Stats, base_direction: Vector2) -> 
 		var projectile: Node = bullet_scene.instantiate()
 		parent.add_child(projectile)
 		if projectile.has_method("launch_direction"):
-			projectile.call("launch_direction", muzzle.global_position, direction, stats.current_attack * damage_multiplier, Stats.DamageType.PHYSICAL)
+			projectile.call("launch_direction", muzzle_position, direction, stats.current_attack * damage_multiplier, Stats.DamageType.PHYSICAL)
 		elif projectile.has_method("launch"):
-			projectile.call("launch", muzzle.global_position, muzzle.global_position + direction, stats.current_attack * damage_multiplier)
+			projectile.call("launch", muzzle_position, muzzle_position + direction, stats.current_attack * damage_multiplier)

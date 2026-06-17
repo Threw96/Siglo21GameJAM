@@ -8,7 +8,7 @@ var transition_locked: bool = false
 var character_names: Array[String] = [
 	"Ingeniero",
 	"Mecanico",
-	"Soldador",
+	"Electricista",
 ]
 
 @onready var cards: Array[PanelContainer] = [

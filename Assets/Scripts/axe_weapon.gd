@@ -8,7 +8,7 @@ class_name AxeWeapon
 
 func _ready() -> void:
 	weapon_id = "axe"
-	display_name = "Hacha orbital"
+	display_name = "Llave orbital"
 	use_player_fire_rate = false
 	cooldown_seconds = 2.6
 

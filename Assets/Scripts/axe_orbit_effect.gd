@@ -1,6 +1,9 @@
 extends Node2D
 class_name AxeOrbitEffect
 
+const WRENCH_TEXTURE: Texture2D = preload("res://Assets/Images/llave.png")
+const WRENCH_DRAW_SIZE: Vector2 = Vector2(30.0, 60.0)
+
 var player: Player
 var damage_amount: float = 1.0
 var damage_type: Stats.DamageType = Stats.DamageType.PHYSICAL
@@ -47,5 +50,11 @@ func _draw() -> void:
 		var angle: float = TAU * float(index) / float(axe_count)
 		var center: Vector2 = Vector2.RIGHT.rotated(angle) * radius
 		draw_line(Vector2.ZERO, center, Color(0.65, 0.85, 0.95, 0.25 * alpha), 2.0)
-		draw_circle(center, 8.0, Color(0.55, 0.85, 1.0, 0.9 * alpha))
-		draw_line(center + Vector2(-12, -6).rotated(angle), center + Vector2(12, 6).rotated(angle), Color(0.95, 0.98, 1.0, alpha), 5.0)
+		draw_set_transform(center, angle + PI * 0.5)
+		draw_texture_rect(
+			WRENCH_TEXTURE,
+			Rect2(-WRENCH_DRAW_SIZE * 0.5, WRENCH_DRAW_SIZE),
+			false,
+			Color(1.0, 1.0, 1.0, alpha)
+		)
+		draw_set_transform(Vector2.ZERO, 0.0)

@@ -9,6 +9,7 @@ var enemies_killed: int = 0
 var is_run_active: bool = false
 var selected_character_id: int = 0
 var selected_character_name: String = "Ingeniero"
+var last_run_summary: Dictionary = {}
 
 signal survived_time_changed(time_seconds: float)
 signal enemies_killed_changed(kill_count: int)
@@ -26,12 +27,46 @@ func _process(delta: float) -> void:
 func start_run() -> void:
 	survived_time = 0.0
 	enemies_killed = 0
+	last_run_summary.clear()
 	is_run_active = true
 	survived_time_changed.emit(survived_time)
 	enemies_killed_changed.emit(enemies_killed)
 
 func stop_run() -> void:
 	is_run_active = false
+
+func finish_run(result: String, player_stats: Stats = null) -> void:
+	is_run_active = false
+	last_run_summary = {
+		"result": result,
+		"time_seconds": survived_time,
+		"kills": enemies_killed,
+		"character_name": selected_character_name,
+		"level": 1,
+		"experience": 0,
+		"max_health": 0,
+	}
+	if player_stats != null:
+		last_run_summary["level"] = player_stats.level
+		last_run_summary["experience"] = int(player_stats.experience)
+		last_run_summary["max_health"] = int(player_stats.current_max_health)
+
+func get_run_summary_text() -> String:
+	if last_run_summary.is_empty():
+		return "No hay resumen de partida disponible."
+	var character_name: String = str(last_run_summary.get("character_name", selected_character_name))
+	var time_text: String = format_time(float(last_run_summary.get("time_seconds", 0.0)))
+	var level: int = int(last_run_summary.get("level", 1))
+	var kills: int = int(last_run_summary.get("kills", 0))
+	var experience: int = int(last_run_summary.get("experience", 0))
+	var max_health: int = int(last_run_summary.get("max_health", 0))
+	return "Personaje: %s\nTiempo sobrevivido: %s\nNivel alcanzado: %s\nEnemigos derrotados: %s\nExperiencia obtenida: %s\nVida maxima: %s" % [character_name, time_text, level, kills, experience, max_health]
+
+func format_time(time_seconds: float) -> String:
+	var total_seconds: int = max(0, int(floor(time_seconds)))
+	var minutes: int = total_seconds / 60
+	var seconds: int = total_seconds % 60
+	return "%02d:%02d" % [minutes, seconds]
 
 func register_enemy_kill() -> void:
 	enemies_killed += 1

@@ -149,7 +149,12 @@ func _trigger_victory() -> void:
 	if victory_triggered:
 		return
 	victory_triggered = true
-	Global.stop_run()
+	var player_stats: Stats = null
+	if Global.Player != null and is_instance_valid(Global.Player):
+		player_stats = Global.Player.stats
+		if Global.Player.has_method("shake_camera"):
+			Global.Player.call("shake_camera", 10.0, 0.35)
+	Global.finish_run("victory", player_stats)
 	if timer != null:
 		timer.stop()
 	get_tree().paused = false

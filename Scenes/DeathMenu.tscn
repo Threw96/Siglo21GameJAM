@@ -53,6 +53,14 @@ theme_override_font_sizes/font_size = 42
 text = "LA MUERTE TE HA ENCONTRADO"
 horizontal_alignment = 1
 
+[node name="SummaryLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.76, 0.48, 1)
+theme_override_font_sizes/font_size = 18
+text = "Resumen"
+horizontal_alignment = 1
+
 [node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1630087208]
 custom_minimum_size = Vector2(280, 54)
 layout_mode = 2

@@ -3,6 +3,8 @@ class_name Player
 
 @export var speed: float = 10  
 @export var stats: Stats
+@export var damage_camera_shake_duration: float = 0.16
+@export var damage_camera_shake_strength: float = 5.0
 
 signal upgrade_choices_ready(choices: Array[StatBuff])
 
@@ -41,8 +43,15 @@ var shield_enabled: bool = false
 var shield_ready: bool = false
 var shield_cooldown_timer: float = 0.0
 var invulnerability_timer: SceneTreeTimer
+var camera_base_offset: Vector2 = Vector2.ZERO
+var camera_shake_time_left: float = 0.0
+var camera_shake_duration: float = 0.0
+var camera_shake_strength: float = 0.0
+var hit_flash_tween: Tween
 
 @onready var health_bar: ProgressBar = $HealthBar
+@onready var player_sprite: Sprite2D = $OneHanded
+@onready var camera: Camera2D = $Camera2D
 @onready var weapon_range_shape: CollisionShape2D = $Area2D/CollisionShape2D
 @onready var right_hand_anchor: Marker2D = $HandAnchors/RightHand
 @onready var left_hand_anchor: Marker2D = $HandAnchors/LeftHand
@@ -54,6 +63,8 @@ var invulnerability_timer: SceneTreeTimer
 #texto de prueba para control de version
 func _ready() -> void:
 	Global.Player = self
+	if camera != null:
+		camera_base_offset = camera.offset
 	if stats != null:
 		if not stats.health_changed.is_connected(_on_stats_health_changed):
 			stats.health_changed.connect(_on_stats_health_changed)
@@ -85,6 +96,7 @@ func _physics_process(delta: float) -> void:
 	_tick_shield(delta)
 	_tick_health_regen(delta)
 	_tick_weapons(delta)
+	_tick_camera_shake(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_pause_input(event):
@@ -497,6 +509,8 @@ func TakeDamage(damage: int, damage_type: Stats.DamageType = Stats.DamageType.PH
 	var final_damage: float = stats.take_damage(float(damage), damage_type, defense_penetration)
 	if final_damage > 0.0:
 		$CPUParticles2D.restart()
+		_play_hit_flash()
+		shake_camera(damage_camera_shake_strength, damage_camera_shake_duration)
 		_start_invulnerability()
 	Global.debug_log("Player recibio %s de dano (%s bruto). Vida: %s / %s" % [final_damage, damage, stats.health, stats.current_max_health])
 	
@@ -506,7 +520,7 @@ func Die() -> void:
 	if is_dead:
 		return
 	is_dead = true
-	Global.stop_run()
+	Global.finish_run("death", stats)
 	AudioManager.play_game_over()
 	if Global.Player == self:
 		Global.Player = null
@@ -614,6 +628,37 @@ func _start_invulnerability() -> void:
 	await invulnerability_timer.timeout
 	if stats != null:
 		stats.set_invulnerable(false)
+
+func shake_camera(strength: float, duration: float) -> void:
+	if camera == null:
+		return
+	camera_shake_strength = maxf(strength, camera_shake_strength)
+	camera_shake_duration = maxf(duration, 0.01)
+	camera_shake_time_left = maxf(duration, camera_shake_time_left)
+
+func _tick_camera_shake(delta: float) -> void:
+	if camera == null or camera_shake_time_left <= 0.0:
+		return
+	camera_shake_time_left -= delta
+	if camera_shake_time_left <= 0.0:
+		camera.offset = camera_base_offset
+		camera_shake_strength = 0.0
+		return
+	var fade: float = camera_shake_time_left / maxf(camera_shake_duration, 0.01)
+	var current_strength: float = camera_shake_strength * fade
+	camera.offset = camera_base_offset + Vector2(
+		randf_range(-current_strength, current_strength),
+		randf_range(-current_strength, current_strength)
+	)
+
+func _play_hit_flash() -> void:
+	if player_sprite == null:
+		return
+	if hit_flash_tween != null:
+		hit_flash_tween.kill()
+	player_sprite.modulate = Color(1.0, 0.35, 0.35, 1.0)
+	hit_flash_tween = create_tween()
+	hit_flash_tween.tween_property(player_sprite, "modulate", Color.WHITE, 0.12)
 
 
 func _on_cd_timeout() -> void:

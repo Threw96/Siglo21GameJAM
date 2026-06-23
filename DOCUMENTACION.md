@@ -298,6 +298,10 @@ Variables principales:
 - `enemy_damage_growth_per_minute = 0.15`: crecimiento de daño enemigo por minuto.
 - `spawn_outside_camera = true`: spawnea fuera de camara.
 - `boss_spawn_interval_seconds = 300.0`: jefe cada 5 minutos.
+- `drone_wave_interval_seconds = 30.0`: oleada de drones cada 30 segundos.
+- `drone_wave_count = 4`: cantidad de drones por oleada.
+- `sphere_miniboss_first_spawn_seconds = 60.0`: primera aparicion del minijefe esfera al minuto 1.
+- `sphere_miniboss_interval_seconds = 40.0`: frecuencia posterior del minijefe esfera.
 
 Formulas:
 
@@ -322,6 +326,63 @@ Para que los enemigos escalen mas lento:
 - Bajar `enemy_health_growth_per_minute`.
 - Bajar `enemy_damage_growth_per_minute`.
 
+### Oleada de drones
+
+Archivo de escena: `Scenes/DroneEnemy.tscn`
+
+Cada `drone_wave_interval_seconds` segundos, el spawner crea una bandada de `drone_wave_count` drones usando `Assets/Images/Enemigo_Dron.png`.
+
+Comportamiento:
+
+- Aparecen en una esquina aleatoria fuera de camara.
+- Se mueven en diagonal hacia la esquina opuesta.
+- La ruta posible es A -> D, B -> C, C -> B o D -> A.
+- Si pasan por encima del player, aplican daño.
+- Si el player los mata, dropean gema porque heredan de `Enemy`.
+- Si llegan al destino, desaparecen y no dropean gema.
+
+Variables para balancear:
+
+- `drone_wave_interval_seconds`: cada cuanto aparece una oleada.
+- `drone_wave_count`: cantidad de drones.
+- `drone_wave_spacing`: separacion lateral entre drones.
+- `drone_spawn_margin`: distancia extra fuera de camara.
+- `drone_health_growth_per_minute`: escalado de vida.
+- `drone_damage_growth_per_minute`: escalado de daño.
+
+### Minijefe esfera
+
+Archivos:
+
+- `Scenes/SphereMiniBoss.tscn`
+- `Assets/Scripts/sphere_miniboss.gd`
+
+El minijefe esfera usa `Assets/Images/Enemigo_esfera.png`. Aparece por primera vez en `sphere_miniboss_first_spawn_seconds` y luego cada `sphere_miniboss_interval_seconds`.
+
+Comportamiento:
+
+- Tiene mas vida y experiencia que un enemigo comun.
+- Intenta mantenerse a media distancia del player.
+- Cuando el player esta en rango, fija una direccion de disparo hacia la posicion actual del player.
+- Primero muestra una linea roja de advertencia durante `laser_warning_time`.
+- Despues dispara un rayo electrico breve sobre esa misma linea.
+- Como la direccion queda bloqueada al iniciar la advertencia, el player tiene tiempo de esquivar.
+- Si muere, dropea gema como cualquier enemigo.
+
+Variables para balancear en `SphereMiniBoss.tscn` o `sphere_miniboss.gd`:
+
+- `speed`: velocidad de movimiento.
+- `max_health`: vida base.
+- `experience_value`: experiencia de la gema al morir.
+- `preferred_distance`: distancia que intenta mantener.
+- `laser_range`: alcance del rayo.
+- `laser_width`: ancho del rayo y margen de impacto.
+- `laser_warning_time`: tiempo de aviso antes del daño.
+- `laser_active_time`: duracion visible del rayo.
+- `laser_cooldown`: recarga entre disparos.
+- `laser_damage`: daño del rayo.
+- `defense_penetration`: porcentaje de defensa ignorada.
+
 ### BossRobot
 
 Archivo de escena: `Scenes/BossRobot.tscn`
@@ -344,7 +405,7 @@ Para hacerlo mas amenazante:
 - Bajar `AttackTimer.wait_time`.
 - Subir `speed` con cuidado, porque la fantasia actual es que sea lento pero peligroso.
 
-El sprite del boss ahora usa `Assets/Images/enemies/boss_robot_copper.png`, una version recortada del atlas original con fondo transparente y linea color cobre oxidado.
+El sprite del boss ahora usa `Assets/Images/Enemigo_RobotGordo.png`, con fondo transparente y escala ajustada en `Scenes/BossRobot.tscn`.
 
 ### HUD, pausa y debug
 
@@ -412,6 +473,8 @@ Esto evita que mouse hover y click disparen demasiados sonidos juntos.
 - `Assets/Scripts/miniboss_enemy.gd`: clase base para minijefes con ataque especial.
 - `Assets/Scripts/boss_enemy.gd`: clase base para jefes con fases.
 - `Assets/Scripts/boss_robot.gd`: jefe robot lento, resistente y de mucho daño.
+- `Assets/Scripts/drone_enemy.gd`: enemigo dron de oleadas diagonales.
+- `Assets/Scripts/sphere_miniboss.gd`: minijefe esfera con rayo telegrafiado.
 - `enemigo1.gd`: IA especifica del enemigo BabyAllien, movimiento y ataque al jugador.
 - `Assets/Scripts/weapon.gd`: clase base de armas.
 - `Assets/Scripts/projectile_weapon.gd`: arma de proyectiles usada por el player.
@@ -433,6 +496,8 @@ Esto evita que mouse hover y click disparen demasiados sonidos juntos.
 - `Scenes/Player.tscn`: escena del jugador.
 - `Scenes/enemigo1.tscn`: escena del enemigo `BabyAllien`.
 - `Scenes/BossRobot.tscn`: escena del jefe robot.
+- `Scenes/DroneEnemy.tscn`: escena del dron de oleadas diagonales.
+- `Scenes/SphereMiniBoss.tscn`: escena del minijefe esfera.
 - `Scenes/bullet_example.tscn`: escena del proyectil.
 - `Scenes/Gema.tscn`: escena de la gema de experiencia.
 - `Scenes/UpgradeMenu.tscn`: escena del menu de mejoras.
@@ -1077,12 +1142,19 @@ El spawner ahora escala con `Global.survived_time`: reduce el tiempo entre olead
 
 Cada 5 minutos intenta spawnear un jefe desde `Scenes/BossRobot.tscn`. Mientras el jefe esta vivo, el spawner no crea enemigos normales. Cuando el jefe muere, se reanuda el spawn normal hasta el proximo bloque de 5 minutos.
 
+Tambien maneja spawns especiales por tiempo:
+
+- Drones cada `drone_wave_interval_seconds`.
+- Minijefe esfera desde `sphere_miniboss_first_spawn_seconds` y luego cada `sphere_miniboss_interval_seconds`.
+
 Para modificar spawn:
 
 - Cambiar `base_wait_time`, `min_wait_time` y `wait_time_decrease_per_minute` en `spawn.gd`.
 - Cambiar `extra_enemy_per_minute` para controlar cantidad por oleada.
 - Cambiar `enemy_health_growth_per_minute` y `enemy_damage_growth_per_minute` para controlar escalado.
 - Cambiar `boss_spawn_interval_seconds` para controlar cada cuanto aparece el boss.
+- Cambiar `drone_wave_interval_seconds` y `drone_wave_count` para controlar la bandada de drones.
+- Cambiar `sphere_miniboss_first_spawn_seconds` y `sphere_miniboss_interval_seconds` para controlar el minijefe esfera.
 - Cambiar las posiciones de los markers.
 - Cambiar `enemigo` por otra escena.
 - Activar o desactivar `spawn_outside_camera`.

@@ -3,6 +3,7 @@ extends Node2D
 @export var enemigo: PackedScene = preload("res://Scenes/enemigo1.tscn")
 @export var boss_scene: PackedScene = preload("res://Scenes/BossRobot.tscn")
 @export var drone_scene: PackedScene = preload("res://Scenes/DroneEnemy.tscn")
+@export var sphere_miniboss_scene: PackedScene = preload("res://Scenes/SphereMiniBoss.tscn")
 @export var base_wait_time: float = 1.2
 @export var min_wait_time: float = 0.2
 @export var wait_time_decrease_per_minute: float = 0.25
@@ -19,11 +20,16 @@ extends Node2D
 @export var drone_spawn_margin: float = 120.0
 @export var drone_health_growth_per_minute: float = 0.2
 @export var drone_damage_growth_per_minute: float = 0.1
+@export var sphere_miniboss_first_spawn_seconds: float = 60.0
+@export var sphere_miniboss_interval_seconds: float = 40.0
+@export var sphere_miniboss_health_growth_per_minute: float = 0.35
+@export var sphere_miniboss_damage_growth_per_minute: float = 0.18
 
 @onready var timer: Timer = get_parent().get_node_or_null("Timer") as Timer
 
 var next_boss_spawn_time: float = 300.0
 var next_drone_wave_time: float = 30.0
+var next_sphere_miniboss_time: float = 60.0
 var active_boss: Enemy
 var defeated_boss_count: int = 0
 var victory_triggered: bool = false
@@ -31,6 +37,7 @@ var victory_triggered: bool = false
 func _ready() -> void:
 	next_boss_spawn_time = boss_spawn_interval_seconds
 	next_drone_wave_time = drone_wave_interval_seconds
+	next_sphere_miniboss_time = sphere_miniboss_first_spawn_seconds
 	if timer != null:
 		timer.wait_time = base_wait_time
 
@@ -40,6 +47,9 @@ func _process(_delta: float) -> void:
 	if Global.survived_time >= next_drone_wave_time:
 		_spawn_drone_wave()
 		next_drone_wave_time = _get_next_drone_wave_time()
+	if Global.survived_time >= next_sphere_miniboss_time:
+		_spawn_sphere_miniboss()
+		next_sphere_miniboss_time = _get_next_sphere_miniboss_time()
 
 func _on_timer_timeout() -> void:
 	if victory_triggered:
@@ -91,6 +101,20 @@ func _spawn_drone_wave() -> void:
 		drone.setup_route(start_position + offset, end_position + offset)
 	Global.debug_log("Oleada de drones en %s segundos" % Global.survived_time)
 
+func _spawn_sphere_miniboss() -> void:
+	if sphere_miniboss_scene == null:
+		return
+	var sphere: Enemy = sphere_miniboss_scene.instantiate() as Enemy
+	if sphere == null:
+		return
+	var minutes: float = Global.survived_time / 60.0
+	sphere.max_health *= 1.0 + minutes * sphere_miniboss_health_growth_per_minute
+	sphere.damage = maxi(1, roundi(float(sphere.damage) * (1.0 + minutes * sphere_miniboss_damage_growth_per_minute)))
+	sphere.experience_value *= 1.0 + minutes * 0.1
+	add_child(sphere)
+	sphere.global_position = _get_spawn_position_outside_camera()
+	Global.debug_log("Miniboss esfera spawneado en %s segundos" % Global.survived_time)
+
 func _spawn_boss() -> void:
 	if boss_scene == null:
 		next_boss_spawn_time += boss_spawn_interval_seconds
@@ -125,7 +149,12 @@ func _trigger_victory() -> void:
 	if victory_triggered:
 		return
 	victory_triggered = true
-	Global.stop_run()
+	var player_stats: Stats = null
+	if Global.Player != null and is_instance_valid(Global.Player):
+		player_stats = Global.Player.stats
+		if Global.Player.has_method("shake_camera"):
+			Global.Player.call("shake_camera", 10.0, 0.35)
+	Global.finish_run("victory", player_stats)
 	if timer != null:
 		timer.stop()
 	get_tree().paused = false
@@ -141,6 +170,12 @@ func _get_next_drone_wave_time() -> float:
 	var next_time: float = next_drone_wave_time + drone_wave_interval_seconds
 	while next_time <= Global.survived_time:
 		next_time += drone_wave_interval_seconds
+	return next_time
+
+func _get_next_sphere_miniboss_time() -> float:
+	var next_time: float = next_sphere_miniboss_time + sphere_miniboss_interval_seconds
+	while next_time <= Global.survived_time:
+		next_time += sphere_miniboss_interval_seconds
 	return next_time
 
 func _update_timer(minutes: float) -> void:

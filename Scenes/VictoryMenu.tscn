@@ -133,6 +133,14 @@ theme_override_font_sizes/font_size = 18
 text = "La maquina principal cayo."
 horizontal_alignment = 1
 
+[node name="SummaryLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.23, 0.07, 0.025, 1)
+theme_override_font_sizes/font_size = 18
+text = "Resumen"
+horizontal_alignment = 1
+
 [node name="ReplayButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(280, 54)
 layout_mode = 2

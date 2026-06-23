@@ -132,8 +132,8 @@ shader_type canvas_item;
 uniform vec4 flash_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void fragment() {
-	vec4 source_color = texture(TEXTURE, UV) * COLOR;
-	COLOR = vec4(flash_color.rgb, source_color.a * flash_color.a);
+	vec4 sampled = texture(TEXTURE, UV) * COLOR;
+	COLOR = vec4(flash_color.rgb, sampled.a * flash_color.a);
 }
 """
 	return shader
